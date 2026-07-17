@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Play, Download, TriangleAlert, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 interface EmployeeRow {
   id: string;
@@ -29,6 +30,7 @@ export function PayrollManager({
   rows: EmployeeRow[];
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [period, setPeriod] = useState(initialPeriod);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [loadingRowId, setLoadingRowId] = useState<string | null>(null);
@@ -79,11 +81,14 @@ export function PayrollManager({
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal generate slip.");
+        showToast(data.message ?? "Gagal generate slip.", "error");
         return;
       }
+      showToast("Slip gaji berhasil dibuat.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan. Coba lagi.");
+      showToast("Gagal generate slip — cek koneksi kamu.", "error");
     } finally {
       setLoadingRowId(null);
     }

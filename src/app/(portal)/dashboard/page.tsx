@@ -5,10 +5,12 @@ import { getTodayRecord } from "@/lib/attendance";
 import { getPendingApprovalsFor } from "@/lib/leave";
 import { getPayslipsForEmployee } from "@/lib/payroll";
 import { getFinalReviewsForEmployee } from "@/lib/performance";
-import { getDirectReports, OFFICE_LOCATION } from "@/lib/db";
+import { getDirectReports, getSubordinateIds, OFFICE_LOCATION } from "@/lib/db";
+import { getManageablePerformanceEmployees } from "@/lib/permissions";
 import { ROLE_LEVEL, ROLE_LABEL } from "@/lib/types";
 import { AttendanceWidget } from "@/components/attendance-widget";
 import { Card, PageHeader } from "@/components/card";
+import { TeamScoreChart } from "@/components/team-score-chart";
 import { formatCurrency, formatPeriodLabel, formatCycleLabel } from "@/lib/format";
 
 export default async function DashboardPage() {
@@ -19,6 +21,15 @@ export default async function DashboardPage() {
   const isApproverLevel = ROLE_LEVEL[employee.role] <= ROLE_LEVEL.supervisor;
   const pendingApprovals = isApproverLevel ? getPendingApprovalsFor(employee.id) : [];
   const directReports = getDirectReports(employee.id);
+  const subordinateIds = getSubordinateIds(employee.id);
+  const manageableTeam = getManageablePerformanceEmployees(employee);
+  const teamScoreEntries = manageableTeam
+    .map((m) => ({
+      name: m.name,
+      score: getFinalReviewsForEmployee(m.id)[0]?.overallScore ?? null,
+    }))
+    .sort((a, b) => (a.score ?? -1) - (b.score ?? -1))
+    .slice(0, 8);
   const latestPayslip = getPayslipsForEmployee(employee.id)[0] ?? null;
   const latestReview = getFinalReviewsForEmployee(employee.id)[0] ?? null;
 
@@ -116,13 +127,19 @@ export default async function DashboardPage() {
             </Card>
           )}
 
-          {directReports.length > 0 && (
+          {directReports.length > 0 || subordinateIds.size > 0 ? (
             <Card>
               <div className="flex items-center gap-2 text-muted-foreground mb-2">
                 <Users className="h-4 w-4" strokeWidth={1.75} />
-                <p className="text-xs font-medium">Bawahan Langsung</p>
+                <p className="text-xs font-medium">Bawahan &amp; Tim</p>
               </div>
-              <p className="text-3xl font-semibold font-mono">{directReports.length}</p>
+              <p className="text-3xl font-semibold font-mono">
+                {directReports.length}
+                <span className="text-base font-normal text-muted-foreground">
+                  {" "}
+                  langsung · {subordinateIds.size} tim
+                </span>
+              </p>
               <Link
                 href="/karyawan"
                 className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
@@ -130,9 +147,29 @@ export default async function DashboardPage() {
                 Lihat tim <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
               </Link>
             </Card>
-          )}
+          ) : null}
         </div>
       </div>
+
+      {manageableTeam.length > 0 && (
+        <Card className="mt-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="h-4 w-4" strokeWidth={1.75} />
+              <p className="text-xs font-medium">
+                Skor Review Terakhir Tim{manageableTeam.length > 8 ? " (8 terendah)" : ""}
+              </p>
+            </div>
+            <Link
+              href="/performance/kelola"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              Kelola semua <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+            </Link>
+          </div>
+          <TeamScoreChart entries={teamScoreEntries} />
+        </Card>
+      )}
     </div>
   );
 }

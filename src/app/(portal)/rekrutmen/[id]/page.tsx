@@ -92,6 +92,17 @@ export default async function JobPostingDetailPage({
                 {c.resumeNote && (
                   <p className="text-sm text-foreground/80 mb-3">{c.resumeNote}</p>
                 )}
+                {c.resumeFile && (
+                  <a
+                    href={c.resumeFile}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={c.name.replace(/\s+/g, "_") + "_CV"}
+                    className="inline-flex items-center gap-1.5 mb-3 rounded-[8px] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted transition-colors"
+                  >
+                    Unduh CV
+                  </a>
+                )}
                 <div className="border-t border-border pt-3">
                   <CandidateStageEditor
                     candidateId={c.id}

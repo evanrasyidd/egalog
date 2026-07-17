@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
-import { isDirectManagerOf } from "@/lib/permissions";
+import { canManagePerformanceFor } from "@/lib/permissions";
 import { findEmployeeById } from "@/lib/db";
 import { findReviewByEmployeeAndCycle, getGoalsForEmployee } from "@/lib/performance";
 import { ROLE_LABEL } from "@/lib/types";
@@ -25,7 +25,7 @@ export default async function ReviewEmployeePage({
   const targetEmployee = findEmployeeById(employeeId);
   if (!targetEmployee) notFound();
 
-  if (!isDirectManagerOf(reviewer.id, employeeId)) redirect("/dashboard");
+  if (!canManagePerformanceFor(reviewer.id, employeeId)) redirect("/dashboard");
 
   const cycleOptions = getCycleOptions();
   const { cycle: cycleParam } = await searchParams;

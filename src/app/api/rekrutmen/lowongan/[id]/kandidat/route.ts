@@ -29,6 +29,14 @@ const bodySchema = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().min(6).max(30),
   resumeNote: z.string().trim().max(2000).default(""),
+  resumeFile: z
+    .string()
+    .trim()
+    .max(2_800_000)
+    .refine((s) => s.startsWith("data:"), "Format file tidak valid.")
+    .nullable()
+    .optional()
+    .default(null),
 });
 
 export async function POST(
@@ -60,6 +68,7 @@ export async function POST(
     parsed.data.email,
     parsed.data.phone,
     parsed.data.resumeNote,
+    parsed.data.resumeFile,
   );
 
   if (!result.ok) {

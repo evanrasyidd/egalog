@@ -61,6 +61,7 @@ export function addCandidate(
   email: string,
   phone: string,
   resumeNote: string,
+  resumeFile: string | null = null,
 ): AddCandidateResult {
   if (!findJobPostingById(jobPostingId)) return { ok: false, error: "job_not_found" };
 
@@ -71,6 +72,7 @@ export function addCandidate(
     email,
     phone,
     resumeNote,
+    resumeFile,
     stage: "lamar",
     notes: "",
     appliedAt: new Date().toISOString(),

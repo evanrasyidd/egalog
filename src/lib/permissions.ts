@@ -1,4 +1,4 @@
-import { findEmployeeById, getSubordinateIds } from "./db";
+import { employees, findEmployeeById, getDirectReports, getSubordinateIds } from "./db";
 import { ROLE_LEVEL } from "./types";
 import type { Employee, LeaveApprovalStep, Role } from "./types";
 
@@ -80,6 +80,27 @@ export function isCurrentApprover(
 export function isDirectManagerOf(managerId: string, employeeId: string): boolean {
   const employee = findEmployeeById(employeeId);
   return !!employee && employee.managerId === managerId;
+}
+
+/**
+ * Siapa yang boleh set goal & isi review performance untuk `employeeId`:
+ * - Atasan langsung (pola dasar, tetap berlaku buat manager/supervisor).
+ * - Owner & Direktur (mengawasi seluruh perusahaan) — mengikuti pola yang
+ *   sama dengan canManagePayroll/canManageRecruitment/canManageEmployees,
+ *   supaya Owner tidak terkunci cuma bisa kelola direct report-nya sendiri.
+ */
+export function canManagePerformanceFor(actorId: string, employeeId: string): boolean {
+  if (isDirectManagerOf(actorId, employeeId)) return true;
+  const actor = findEmployeeById(actorId);
+  return !!actor && ROLE_LEVEL[actor.role] <= ROLE_LEVEL.direktur;
+}
+
+/** Daftar karyawan yang boleh di-kelola performance-nya oleh `actor`. */
+export function getManageablePerformanceEmployees(actor: Employee): Employee[] {
+  if (ROLE_LEVEL[actor.role] <= ROLE_LEVEL.direktur) {
+    return employees.filter((e) => e.isActive && e.id !== actor.id);
+  }
+  return getDirectReports(actor.id);
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
+import { ToastProvider } from "@/components/toast-provider";
 
 // next/font tidak bisa fetch Google Fonts di sandbox build ini (403), jadi
 // pakai fallback <link> tag langsung di head sesuai pola yang sudah terbukti
@@ -59,8 +60,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
-        <ServiceWorkerRegister />
+        <ToastProvider>
+          {children}
+          <ServiceWorkerRegister />
+        </ToastProvider>
       </body>
     </html>
   );

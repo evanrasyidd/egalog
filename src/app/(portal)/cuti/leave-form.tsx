@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, TriangleAlert, Send } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 const TYPE_OPTIONS = [
   { value: "cuti_tahunan", label: "Cuti Tahunan" },
@@ -12,6 +13,7 @@ const TYPE_OPTIONS = [
 
 export function LeaveForm() {
   const router = useRouter();
+  const showToast = useToast();
   const [type, setType] = useState<(typeof TYPE_OPTIONS)[number]["value"]>("cuti_tahunan");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -34,6 +36,7 @@ export function LeaveForm() {
 
       if (!res.ok) {
         setError(data.message ?? "Gagal mengajukan cuti.");
+        showToast(data.message ?? "Gagal mengajukan cuti.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -41,9 +44,11 @@ export function LeaveForm() {
       setStartDate("");
       setEndDate("");
       setReason("");
+      showToast("Pengajuan cuti/izin berhasil dikirim.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan. Coba lagi.");
+      showToast("Gagal mengajukan cuti — cek koneksi kamu.", "error");
     } finally {
       setIsSubmitting(false);
     }

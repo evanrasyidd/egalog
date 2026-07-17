@@ -16,8 +16,8 @@ export default async function KaryawanPage({
   const employee = await getCurrentEmployee();
   if (!employee) return null;
 
-  const isManagementLevel = ROLE_LEVEL[employee.role] <= ROLE_LEVEL.manager;
-  if (!isManagementLevel) redirect("/dashboard");
+  const isApproverLevel = ROLE_LEVEL[employee.role] <= ROLE_LEVEL.supervisor;
+  if (!isApproverLevel) redirect("/dashboard");
 
   const isManager = canManageEmployees(employee);
   const { status } = await searchParams;

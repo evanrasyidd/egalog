@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Loader2 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import type { LeaveRequest } from "@/lib/types";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -27,6 +28,7 @@ export function ApprovalList({
   employeeNames: Record<string, string>;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +44,14 @@ export function ApprovalList({
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal memproses keputusan.");
+        showToast(data.message ?? "Gagal memproses keputusan.", "error");
         return;
       }
+      showToast(decision === "disetujui" ? "Pengajuan disetujui." : "Pengajuan ditolak.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan. Coba lagi.");
+      showToast("Gagal memproses keputusan — cek koneksi kamu.", "error");
     } finally {
       setLoadingId(null);
     }

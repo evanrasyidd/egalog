@@ -40,6 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# agent config (local only, jangan di-push)
 AGENTS.md
 CLAUDE.md
-AUDIT.md

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 const AVATAR_COLOR_PRESETS = [
   "#1E2A44",
@@ -17,20 +18,30 @@ const AVATAR_COLOR_PRESETS = [
 
 export function AvatarColorPicker({ currentColor }: { currentColor: string }) {
   const router = useRouter();
+  const showToast = useToast();
   const [selected, setSelected] = useState(currentColor);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSelect(color: string) {
     if (color === selected) return;
+    const previous = selected;
     setSelected(color);
     setIsLoading(true);
     try {
-      await fetch("/api/profile/avatar", {
+      const res = await fetch("/api/profile/avatar", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ color }),
       });
+      if (!res.ok) {
+        setSelected(previous);
+        showToast("Gagal ganti warna avatar.", "error");
+        return;
+      }
       router.refresh();
+    } catch {
+      setSelected(previous);
+      showToast("Gagal ganti warna avatar — cek koneksi kamu.", "error");
     } finally {
       setIsLoading(false);
     }

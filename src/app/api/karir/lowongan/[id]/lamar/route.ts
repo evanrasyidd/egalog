@@ -24,6 +24,17 @@ const bodySchema = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().min(6).max(30),
   resumeNote: z.string().trim().min(10).max(2000),
+  // CV dikirim sebagai data URL (base64). Dibatasi panjangnya di server juga
+  // sebagai defense kedua, karena client-side validation bisa dilewati kalau
+  // pelanggar hit endpoint ini langsung. ~2.7MB base64 ≈ 2MB file asli.
+  resumeFile: z
+    .string()
+    .trim()
+    .max(2_800_000)
+    .refine((s) => s.startsWith("data:"), "Format file tidak valid.")
+    .nullable()
+    .optional()
+    .default(null),
   // Honeypot — field ini TIDAK ADA di form form yang manusia lihat (disembunyikan
   // via CSS di client). Bot yang mengisi semua field di DOM (atau yang hit
   // endpoint ini langsung tanpa lewat form) akan mengisi/mengirim field ini.
@@ -81,6 +92,7 @@ export async function POST(
     parsed.data.email,
     parsed.data.phone,
     parsed.data.resumeNote,
+    parsed.data.resumeFile,
   );
 
   if (!result.ok) {

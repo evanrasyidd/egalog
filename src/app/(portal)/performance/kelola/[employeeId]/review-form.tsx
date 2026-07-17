@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Send, TriangleAlert, Lock } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import { COMPETENCIES, COMPETENCY_LABEL } from "@/lib/types";
 import type { Competency } from "@/lib/types";
 
@@ -30,6 +31,7 @@ export function ReviewForm({
   existingReview: ExistingReview | null;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [scores, setScores] = useState<Record<Competency, number>>(
     existingReview?.scores ?? defaultScores(),
   );
@@ -43,7 +45,7 @@ export function ReviewForm({
 
   const isFinal = existingReview?.status === "selesai";
 
-  async function saveDraft(): Promise<string | null> {
+  async function saveDraft(): Promise<{ id: string | null; message: string | null }> {
     const res = await fetch("/api/performance/reviews", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -51,20 +53,27 @@ export function ReviewForm({
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.message ?? "Gagal menyimpan draft.");
-      return null;
+      const message = data.message ?? "Gagal menyimpan draft.";
+      setError(message);
+      return { id: null, message };
     }
-    return data.review.id as string;
+    return { id: data.review.id as string, message: null };
   }
 
   async function handleSaveDraft() {
     setError(null);
     setIsSaving(true);
     try {
-      const id = await saveDraft();
-      if (id) router.refresh();
+      const { id, message } = await saveDraft();
+      if (id) {
+        showToast("Draft review tersimpan.");
+        router.refresh();
+      } else {
+        showToast(message ?? "Gagal menyimpan draft.", "error");
+      }
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal menyimpan draft — cek koneksi kamu.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -74,18 +83,24 @@ export function ReviewForm({
     setError(null);
     setIsSubmitting(true);
     try {
-      const id = await saveDraft();
-      if (!id) return;
+      const { id, message } = await saveDraft();
+      if (!id) {
+        showToast(message ?? "Gagal submit review.", "error");
+        return;
+      }
 
       const res = await fetch(`/api/performance/reviews/${id}/submit`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal submit review.");
+        showToast(data.message ?? "Gagal submit review.", "error");
         return;
       }
+      showToast("Review final berhasil disubmit.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal submit review — cek koneksi kamu.", "error");
     } finally {
       setIsSubmitting(false);
     }

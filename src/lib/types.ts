@@ -234,6 +234,7 @@ export interface Candidate {
   email: string;
   phone: string;
   resumeNote: string; // ringkasan CV/pengalaman, input teks manual oleh HR
+  resumeFile: string | null; // data URL file CV (pdf/doc) yg diupload pelamar
   stage: CandidateStage;
   notes: string;
   appliedAt: string;

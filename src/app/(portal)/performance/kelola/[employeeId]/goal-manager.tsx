@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, TriangleAlert } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import { GoalStatusSelect } from "../../goal-status-select";
 import { formatCycleLabel } from "@/lib/format";
 import type { Goal } from "@/lib/types";
@@ -17,6 +18,7 @@ export function GoalManager({
   initialGoals: Goal[];
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +41,11 @@ export function GoalManager({
       }
       setTitle("");
       setDescription("");
+      showToast("Goal berhasil ditambahkan.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal menambah goal — cek koneksi kamu.", "error");
     } finally {
       setIsSubmitting(false);
     }

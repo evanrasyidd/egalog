@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import type { CandidateStage } from "@/lib/types";
 
 const STAGE_OPTIONS: { value: CandidateStage; label: string }[] = [
@@ -23,6 +24,7 @@ export function CandidateStageEditor({
   currentNotes: string;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [stage, setStage] = useState(currentStage);
   const [notes, setNotes] = useState(currentNotes);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,11 +44,14 @@ export function CandidateStageEditor({
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal menyimpan.");
+        showToast(data.message ?? "Gagal menyimpan.", "error");
         return;
       }
+      showToast("Data kandidat tersimpan.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal menyimpan — cek koneksi kamu.", "error");
     } finally {
       setIsSaving(false);
     }

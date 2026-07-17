@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, LogOut, Loader2, MapPin, TriangleAlert } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import { StatusBadge } from "./status-badge";
 import { SelfieCapture } from "./selfie-capture";
 import type { AttendanceRecord } from "@/lib/types";
@@ -44,6 +45,7 @@ export function AttendanceWidget({
   officeLabel: string;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [record, setRecord] = useState(initialRecord);
   const [isLoading, setIsLoading] = useState<"in" | "out" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,14 +65,18 @@ export function AttendanceWidget({
 
       if (!res.ok) {
         setError(data.message ?? "Gagal memproses absensi.");
+        showToast(data.message ?? "Gagal memproses absensi.", "error");
         setIsLoading(null);
         return;
       }
 
       setRecord(data.record);
+      showToast(action === "in" ? "Absen masuk berhasil dicatat." : "Absen pulang berhasil dicatat.");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      const message = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      setError(message);
+      showToast(message, "error");
     } finally {
       setIsLoading(null);
     }

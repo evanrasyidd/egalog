@@ -1,6 +1,6 @@
 import "server-only";
 import { performanceReviews, goals, findEmployeeById, nextReviewId, nextGoalId } from "./db";
-import { isDirectManagerOf } from "./permissions";
+import { canManagePerformanceFor } from "./permissions";
 import { COMPETENCIES } from "./types";
 import type { PerformanceReview, Goal, Competency, GoalStatus } from "./types";
 
@@ -38,7 +38,7 @@ export function saveDraftReview(
 ): SaveDraftResult {
   if (!isValidCycle(cycle)) return { ok: false, error: "invalid_cycle" };
   if (!findEmployeeById(employeeId)) return { ok: false, error: "employee_not_found" };
-  if (!isDirectManagerOf(reviewerId, employeeId)) {
+  if (!canManagePerformanceFor(reviewerId, employeeId)) {
     return { ok: false, error: "not_direct_manager" };
   }
 
@@ -49,6 +49,7 @@ export function saveDraftReview(
 
   if (existing) {
     if (existing.status === "selesai") return { ok: false, error: "already_final" };
+    existing.reviewerId = reviewerId;
     existing.scores = scores;
     existing.overallScore = overallScore;
     existing.strengths = strengths;
@@ -124,7 +125,7 @@ export function createGoal(
   description: string,
 ): CreateGoalResult {
   if (!findEmployeeById(employeeId)) return { ok: false, error: "employee_not_found" };
-  if (!isDirectManagerOf(createdBy, employeeId)) {
+  if (!canManagePerformanceFor(createdBy, employeeId)) {
     return { ok: false, error: "not_direct_manager" };
   }
 
@@ -157,7 +158,7 @@ export function updateGoalStatus(
   if (!goal) return { ok: false, error: "not_found" };
 
   const isOwner = goal.employeeId === actorId;
-  const isManager = isDirectManagerOf(actorId, goal.employeeId);
+  const isManager = canManagePerformanceFor(actorId, goal.employeeId);
   if (!isOwner && !isManager) return { ok: false, error: "forbidden" };
 
   goal.status = status;

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentEmployee } from "@/lib/current-employee";
-import { isDirectManagerOf } from "@/lib/permissions";
+import { canManagePerformanceFor } from "@/lib/permissions";
 import {
   saveDraftReview,
   getFinalReviewsForEmployee,
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const employeeId = url.searchParams.get("employeeId");
 
   if (employeeId && employeeId !== employee.id) {
-    if (!isDirectManagerOf(employee.id, employeeId)) {
+    if (!canManagePerformanceFor(employee.id, employeeId)) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
     if (!findEmployeeById(employeeId)) {

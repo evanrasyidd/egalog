@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserX, UserCheck, KeyRound, TriangleAlert, Copy, Check } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 export function EmployeeStatusAction({
   employeeId,
@@ -12,6 +13,7 @@ export function EmployeeStatusAction({
   isActive: boolean;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -28,12 +30,15 @@ export function EmployeeStatusAction({
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal mengubah status.");
+        showToast(data.message ?? "Gagal mengubah status.", "error");
         return;
       }
       setShowConfirm(false);
+      showToast(isActive ? "Karyawan dinonaktifkan." : "Karyawan diaktifkan kembali.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal mengubah status — cek koneksi kamu.", "error");
     } finally {
       setIsLoading(false);
     }

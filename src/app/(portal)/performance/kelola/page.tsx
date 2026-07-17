@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
-import { getDirectReports } from "@/lib/db";
+import { getManageablePerformanceEmployees } from "@/lib/permissions";
 import { findReviewByEmployeeAndCycle } from "@/lib/performance";
 import { Card, PageHeader } from "@/components/card";
 import { StatusBadge } from "@/components/status-badge";
@@ -16,14 +16,14 @@ export default async function KelolaPerformancePage({
   const employee = await getCurrentEmployee();
   if (!employee) return null;
 
-  const directReports = getDirectReports(employee.id);
-  if (directReports.length === 0) redirect("/dashboard");
+  const manageableEmployees = getManageablePerformanceEmployees(employee);
+  if (manageableEmployees.length === 0) redirect("/dashboard");
 
   const cycleOptions = getCycleOptions();
   const { cycle: cycleParam } = await searchParams;
   const cycle = cycleParam && cycleOptions.includes(cycleParam) ? cycleParam : getCurrentCycle();
 
-  const rows = directReports
+  const rows = manageableEmployees
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((person) => ({
       person,

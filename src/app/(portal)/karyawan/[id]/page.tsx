@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
-import { canManageEmployees } from "@/lib/permissions";
+import { canManageEmployees, canViewEmployeeData } from "@/lib/permissions";
 import { employees, findEmployeeById, getSubordinateIds } from "@/lib/db";
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
@@ -25,9 +25,14 @@ export default async function EmployeeDetailPage({
 }) {
   const actor = await getCurrentEmployee();
   if (!actor) return null;
-  if (!canManageEmployees(actor)) redirect("/dashboard");
 
   const { id } = await params;
+  // Owner/Direktur/HR (canManageEmployees) boleh buka semua. Role lain cuma
+  // boleh lihat bawahannya sendiri (langsung maupun tidak langsung) sebagai
+  // read-only — sesuai garis komando, tanpa wewenang edit.
+  const canManage = canManageEmployees(actor);
+  if (!canManage && !canViewEmployeeData(actor.id, id)) redirect("/dashboard");
+
   const target = findEmployeeById(id);
   if (!target) notFound();
 
@@ -51,46 +56,49 @@ export default async function EmployeeDetailPage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="space-y-5">
-          <Card>
-            <div className="flex items-center gap-4 mb-5">
-              <Avatar
-                name={target.name}
-                avatarColor={target.avatarColor}
-                avatarPhoto={target.avatarPhoto}
-                size="lg"
-              />
-              <div>
-                <p className="text-base font-semibold">{target.name}</p>
-                <p className="text-sm text-muted-foreground">{target.email}</p>
-              </div>
+      <div className="space-y-5">
+        <Card>
+          <div className="flex items-center gap-4 mb-5">
+            <Avatar
+              name={target.name}
+              avatarColor={target.avatarColor}
+              avatarPhoto={target.avatarPhoto}
+              size="lg"
+            />
+            <div>
+              <p className="text-base font-semibold">{target.name}</p>
+              <p className="text-sm text-muted-foreground">{target.email}</p>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm border-t border-border pt-4">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">NIP</p>
-                <p className="font-mono">{target.nip}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Departemen</p>
-                <p>{DEPARTMENT_LABEL[target.department]}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Tanggal Bergabung</p>
-                <p>{formatDate(target.joinedAt)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Sisa Cuti Tahunan</p>
-                <p className="font-mono">{target.leaveBalance} hari</p>
-              </div>
+          <div className="grid grid-cols-2 gap-4 text-sm border-t border-border pt-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">NIP</p>
+              <p className="font-mono">{target.nip}</p>
             </div>
-          </Card>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Departemen</p>
+              <p>{DEPARTMENT_LABEL[target.department]}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Tanggal Bergabung</p>
+              <p>{formatDate(target.joinedAt)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Sisa Cuti Tahunan</p>
+              <p className="font-mono">{target.leaveBalance} hari</p>
+            </div>
+          </div>
+        </Card>
 
+        {canManage && (
           <Card>
             <h2 className="text-sm font-medium mb-4">Status Akun</h2>
             <EmployeeStatusAction employeeId={target.id} isActive={target.isActive} />
           </Card>
+        )}
 
+        {canManage && (
           <Card>
             <h2 className="text-sm font-medium mb-1">Reset Password</h2>
             <p className="text-xs text-muted-foreground mb-3">
@@ -98,8 +106,10 @@ export default async function EmployeeDetailPage({
             </p>
             <ResetPasswordAction employeeId={target.id} />
           </Card>
-        </div>
+        )}
+      </div>
 
+      {canManage && (
         <Card>
           <h2 className="text-sm font-medium mb-4">Edit Data Karyawan</h2>
           <EditEmployeeForm
@@ -111,6 +121,7 @@ export default async function EmployeeDetailPage({
             managerOptions={managerOptions}
           />
         </Card>
+      )}
       </div>
     </div>
   );

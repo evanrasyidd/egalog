@@ -10,6 +10,9 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [resumeNote, setResumeNote] = useState("");
+  const [resumeFile, setResumeFile] = useState<string | null>(null);
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [fileError, setFileError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -22,7 +25,7 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
       const res = await fetch(`/api/rekrutmen/lowongan/${jobPostingId}/kandidat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone, resumeNote }),
+        body: JSON.stringify({ name, email, phone, resumeNote, resumeFile }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -33,6 +36,8 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
       setEmail("");
       setPhone("");
       setResumeNote("");
+      setResumeFile(null);
+      setResumeFileName("");
       setIsOpen(false);
       router.refresh();
     } catch {
@@ -117,6 +122,42 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
           onChange={(e) => setResumeNote(e.target.value)}
           className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
         />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="cand-cv" className="text-sm font-medium">
+          Unggah CV (PDF/DOC, opsional)
+        </label>
+        <input
+          id="cand-cv"
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            setFileError(null);
+            if (!file) {
+              setResumeFile(null);
+              setResumeFileName("");
+              return;
+            }
+            if (file.size > 2 * 1024 * 1024) {
+              setFileError("Ukuran file maksimal 2 MB.");
+              e.target.value = "";
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => {
+              setResumeFile(reader.result as string);
+              setResumeFileName(file.name);
+            };
+            reader.readAsDataURL(file);
+          }}
+          className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm file:mr-3 file:rounded-[8px] file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:text-primary"
+        />
+        {resumeFileName && (
+          <p className="text-xs text-muted-foreground">Terpilih: {resumeFileName}</p>
+        )}
+        {fileError && <p className="text-xs text-danger">{fileError}</p>}
       </div>
 
       {error && (

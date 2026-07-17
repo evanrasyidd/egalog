@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserPlus, TriangleAlert } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
   const router = useRouter();
+  const showToast = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -27,6 +29,7 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal menambah kandidat.");
+        showToast(data.message ?? "Gagal menambah kandidat.", "error");
         return;
       }
       setName("");
@@ -34,9 +37,11 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
       setPhone("");
       setResumeNote("");
       setIsOpen(false);
+      showToast("Kandidat berhasil ditambahkan.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal menambah kandidat — cek koneksi kamu.", "error");
     } finally {
       setIsSubmitting(false);
     }

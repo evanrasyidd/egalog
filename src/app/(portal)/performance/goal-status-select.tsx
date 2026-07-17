@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import type { GoalStatus } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: GoalStatus; label: string }[] = [
@@ -20,6 +21,7 @@ export function GoalStatusSelect({
   currentStatus: GoalStatus;
 }) {
   const router = useRouter();
+  const showToast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,11 +37,14 @@ export function GoalStatusSelect({
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal update status.");
+        showToast(data.message ?? "Gagal update status.", "error");
         return;
       }
+      showToast("Status goal diperbarui.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal update status — cek koneksi kamu.", "error");
     } finally {
       setIsLoading(false);
     }

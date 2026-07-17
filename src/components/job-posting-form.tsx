@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, TriangleAlert } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 import type { Department, EmploymentType } from "@/lib/types";
 import { DEPARTMENT_LABEL } from "@/lib/types";
+import { Modal } from "@/components/modal";
 
 const EMPLOYMENT_TYPE_OPTIONS: { value: EmploymentType; label: string }[] = [
   { value: "full_time", label: "Full-time" },
@@ -16,6 +18,7 @@ const DEPARTMENT_OPTIONS = Object.entries(DEPARTMENT_LABEL) as [Department, stri
 
 export function JobPostingForm() {
   const router = useRouter();
+  const showToast = useToast();
   const [title, setTitle] = useState("");
   const [department, setDepartment] = useState<Department>("operasional");
   const [employmentType, setEmploymentType] = useState<EmploymentType>("full_time");
@@ -38,15 +41,18 @@ export function JobPostingForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.message ?? "Gagal membuat lowongan.");
+        showToast(data.message ?? "Gagal membuat lowongan.", "error");
         return;
       }
       setTitle("");
       setDescription("");
       setRequirements("");
       setIsOpen(false);
+      showToast("Lowongan berhasil dipublikasikan.");
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan.");
+      showToast("Gagal membuat lowongan — cek koneksi kamu.", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -66,123 +72,130 @@ export function JobPostingForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-[10px] border border-border bg-surface p-5">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-2 space-y-1.5">
-          <label htmlFor="job-title" className="text-sm font-medium">
-            Judul Posisi
-          </label>
-          <input
-            id="job-title"
-            type="text"
-            required
-            minLength={3}
-            maxLength={150}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          />
+    <Modal
+      open={isOpen}
+      onClose={() => setIsOpen(false)}
+      title="Buat Lowongan Baru"
+      description="Isi detail posisi yang akan dipublikasikan ke halaman karir."
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="sm:col-span-2 space-y-1.5">
+            <label htmlFor="job-title" className="text-sm font-medium">
+              Judul Posisi
+            </label>
+            <input
+              id="job-title"
+              type="text"
+              required
+              minLength={3}
+              maxLength={150}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="job-type" className="text-sm font-medium">
+              Tipe
+            </label>
+            <select
+              id="job-type"
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value as EmploymentType)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
         <div className="space-y-1.5">
-          <label htmlFor="job-type" className="text-sm font-medium">
-            Tipe
+          <label htmlFor="job-department" className="text-sm font-medium">
+            Departemen
           </label>
           <select
-            id="job-type"
-            value={employmentType}
-            onChange={(e) => setEmploymentType(e.target.value as EmploymentType)}
+            id="job-department"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value as Department)}
             className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           >
-            {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            {DEPARTMENT_OPTIONS.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>
         </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="job-department" className="text-sm font-medium">
-          Departemen
-        </label>
-        <select
-          id="job-department"
-          value={department}
-          onChange={(e) => setDepartment(e.target.value as Department)}
-          className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-        >
-          {DEPARTMENT_OPTIONS.map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="job-description" className="text-sm font-medium">
-          Deskripsi Pekerjaan
-        </label>
-        <textarea
-          id="job-description"
-          required
-          minLength={10}
-          maxLength={2000}
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="job-requirements" className="text-sm font-medium">
-          Kualifikasi
-        </label>
-        <textarea
-          id="job-requirements"
-          required
-          minLength={10}
-          maxLength={2000}
-          rows={3}
-          value={requirements}
-          onChange={(e) => setRequirements(e.target.value)}
-          className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
-        />
-      </div>
-
-      {error && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 rounded-[10px] bg-danger/10 border border-danger/30 px-3.5 py-2.5 text-sm text-danger"
-        >
-          <TriangleAlert className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.75} />
-          <span>{error}</span>
+        <div className="space-y-1.5">
+          <label htmlFor="job-description" className="text-sm font-medium">
+            Deskripsi Pekerjaan
+          </label>
+          <textarea
+            id="job-description"
+            required
+            minLength={10}
+            maxLength={2000}
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+          />
         </div>
-      )}
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="flex items-center gap-2 rounded-[10px] bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
-        >
-          {isSubmitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
-          ) : (
-            <Plus className="h-4 w-4" strokeWidth={1.75} />
-          )}
-          Publikasikan
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          className="rounded-[10px] border border-border bg-surface px-4 py-2.5 text-sm font-medium hover:bg-surface-muted transition-colors"
-        >
-          Batal
-        </button>
-      </div>
-    </form>
+        <div className="space-y-1.5">
+          <label htmlFor="job-requirements" className="text-sm font-medium">
+            Kualifikasi
+          </label>
+          <textarea
+            id="job-requirements"
+            required
+            minLength={10}
+            maxLength={2000}
+            rows={3}
+            value={requirements}
+            onChange={(e) => setRequirements(e.target.value)}
+            className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary resize-none"
+          />
+        </div>
+
+        {error && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[10px] bg-danger/10 border border-danger/30 px-3.5 py-2.5 text-sm text-danger"
+          >
+            <TriangleAlert className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.75} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 rounded-[10px] bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
+            ) : (
+              <Plus className="h-4 w-4" strokeWidth={1.75} />
+            )}
+            Publikasikan
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="rounded-[10px] border border-border bg-surface px-4 py-2.5 text-sm font-medium hover:bg-surface-muted transition-colors"
+          >
+            Batal
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 }
