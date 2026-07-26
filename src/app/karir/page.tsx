@@ -1,8 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { getOpenJobPostings } from "@/lib/recruitment";
 import { DEPARTMENT_LABEL } from "@/lib/types";
 import { StampBadge } from "@/components/stamp-badge";
+
+export const metadata: Metadata = { title: "Karir" };
 
 // ISR: halaman ini publik & datanya jarang berubah (lowongan baru cuma
 // dibuat sesekali oleh HR) — cache 60 detik supaya visitor berulang/crawler

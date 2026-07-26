@@ -1,6 +1,7 @@
 import "server-only";
 import { performanceReviews, goals, findEmployeeById, nextReviewId, nextGoalId } from "./db";
 import { canManagePerformanceFor } from "./permissions";
+import { createNotification } from "./notifications";
 import { COMPETENCIES } from "./types";
 import type { PerformanceReview, Goal, Competency, GoalStatus } from "./types";
 
@@ -86,6 +87,17 @@ export function submitReview(reviewId: string, reviewerId: string): SubmitReview
 
   review.status = "selesai";
   review.submittedAt = new Date().toISOString();
+  const employee = findEmployeeById(review.employeeId);
+  const reviewer = findEmployeeById(review.reviewerId);
+  if (employee && reviewer) {
+    createNotification(
+      "review_submitted",
+      employee.id,
+      "Performance review sudah final",
+      `Review kuartal ${review.cycle} dari ${reviewer.name} — skor akhir: ${review.overallScore}/5`,
+      "/performance",
+    );
+  }
   return { ok: true, review };
 }
 
@@ -141,6 +153,16 @@ export function createGoal(
     updatedAt: new Date().toISOString(),
   };
   goals.push(goal);
+  const goalCreator = findEmployeeById(createdBy);
+  if (goalCreator) {
+    createNotification(
+      "goal_assigned",
+      employeeId,
+      "Goal/KPI baru diberikan",
+      `${title} — oleh ${goalCreator.name} untuk siklus ${cycle}`,
+      "/performance",
+    );
+  }
   return { ok: true, goal };
 }
 

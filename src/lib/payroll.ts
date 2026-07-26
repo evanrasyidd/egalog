@@ -1,11 +1,9 @@
 import "server-only";
 import { attendanceRecords, leaveRequests, payslips, findEmployeeById, nextPayslipId } from "./db";
+import { createNotification } from "./notifications";
+import { getSystemSettings } from "./settings";
 import {
-  DAILY_TRANSPORT_ALLOWANCE,
-  DAILY_MEAL_ALLOWANCE,
   POSITION_ALLOWANCE_BY_ROLE,
-  LATE_PENALTY_PER_DAY,
-  BPJS_RATE,
   estimateIncomeTax,
   STANDARD_WORK_HOURS_PER_DAY,
   MAX_OVERTIME_HOURS_PER_DAY,
@@ -122,11 +120,12 @@ export function generatePayslip(
 
   const { summary, totalOvertimeHours } = computeAttendance(employeeId, period);
 
+  const settings = getSystemSettings();
   const hourlyRate = employee.baseSalary / MONTHLY_HOURS_DIVISOR;
   const overtimePay = Math.round(hourlyRate * OVERTIME_MULTIPLIER * totalOvertimeHours);
 
-  const allowanceTransport = summary.presentDays * DAILY_TRANSPORT_ALLOWANCE;
-  const allowanceMeal = summary.presentDays * DAILY_MEAL_ALLOWANCE;
+  const allowanceTransport = summary.presentDays * settings.dailyTransportAllowance;
+  const allowanceMeal = summary.presentDays * settings.dailyMealAllowance;
   const allowancePosition = POSITION_ALLOWANCE_BY_ROLE[employee.role];
 
   const grossPay =
@@ -136,9 +135,9 @@ export function generatePayslip(
     allowancePosition +
     overtimePay;
 
-  const bpjs = Math.round(employee.baseSalary * BPJS_RATE);
+  const bpjs = Math.round(employee.baseSalary * settings.bpjsRate);
   const incomeTax = Math.round(estimateIncomeTax(grossPay));
-  const latePenalty = summary.lateDays * LATE_PENALTY_PER_DAY;
+  const latePenalty = summary.lateDays * settings.latePenaltyPerDay;
   const dailyRate = employee.baseSalary / summary.workingDays;
   const absencePenalty = Math.round(summary.alphaDays * dailyRate);
 
@@ -167,6 +166,13 @@ export function generatePayslip(
   };
 
   payslips.push(payslip);
+  createNotification(
+    "payroll_generated",
+    employeeId,
+    "Slip gaji sudah terbit",
+    `Payroll periode ${period} sudah tersedia — total take home pay ${new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(netPay)}`,
+    "/payroll",
+  );
   return { ok: true, payslip };
 }
 

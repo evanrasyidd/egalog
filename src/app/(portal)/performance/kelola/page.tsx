@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Kelola Review" };
 import { getManageablePerformanceEmployees } from "@/lib/permissions";
 import { findReviewByEmployeeAndCycle } from "@/lib/performance";
 import { Card, PageHeader } from "@/components/card";

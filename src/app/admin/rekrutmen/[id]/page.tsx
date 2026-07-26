@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { findJobPostingById, getCandidatesForJob } from "@/lib/recruitment";
+
+export const metadata: Metadata = { title: "Admin • Detail Lowongan" };
 import { DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { StatusBadge } from "@/components/status-badge";

@@ -5,6 +5,7 @@ import { canManagePayroll } from "@/lib/permissions";
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { BottomNav } from "@/components/bottom-nav";
+import { ActivityTracker } from "@/components/activity-tracker";
 
 export default async function PortalLayout({
   children,
@@ -25,11 +26,14 @@ export default async function PortalLayout({
 
   const isApproverLevel = ROLE_LEVEL[employee.role] <= ROLE_LEVEL.supervisor;
   const isManagementLevel = ROLE_LEVEL[employee.role] <= ROLE_LEVEL.manager;
+  const isOwnerLevel = employee.role === "owner";
   const isPayrollManager = canManagePayroll(employee);
-  const navAccess = { isApproverLevel, isManagementLevel, isPayrollManager };
+  const navAccess = { isApproverLevel, isManagementLevel, isOwnerLevel, isPayrollManager, isAdmin: false, role: employee.role, department: employee.department };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
+      <ActivityTracker />
+      <div className="flex min-h-screen bg-background">
       <Sidebar {...navAccess} />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar employee={employee} />
@@ -39,5 +43,6 @@ export default async function PortalLayout({
       </div>
       <BottomNav {...navAccess} />
     </div>
+    </>
   );
 }

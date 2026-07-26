@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyLogin, verifyAdminLogin } from "@/lib/auth";
 import { createSession } from "@/lib/session";
+import { logActivity } from "@/lib/activity-log";
 
 // Bukan email-only lagi — Admin login pakai username, bukan email
 // @egalog.co.id seperti karyawan (karena memang bukan karyawan).
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       name: employeeResult.employee.name,
       department: employeeResult.employee.department,
     });
+    logActivity("system", employeeResult.employee.name, employeeResult.employee.role, "Login", employeeResult.employee.email);
     return NextResponse.json({ ok: true });
   }
 
@@ -67,6 +69,7 @@ export async function POST(request: Request) {
       sub: adminResult.admin.id,
       name: adminResult.admin.name,
     });
+    logActivity("system", adminResult.admin.name, "admin", "Login", "admin");
     return NextResponse.json({ ok: true });
   }
 

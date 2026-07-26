@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, UserX, UserCheck, KeyRound, TriangleAlert, Copy, Check } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 export function EmployeeStatusAction({
   employeeId,
@@ -110,6 +111,7 @@ export function ResetPasswordAction({ employeeId }: { employeeId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleReset() {
     setError(null);
@@ -166,7 +168,7 @@ export function ResetPasswordAction({ employeeId }: { employeeId: string }) {
       {error && <p className="text-xs text-danger">{error}</p>}
       <button
         type="button"
-        onClick={handleReset}
+        onClick={() => setShowConfirm(true)}
         disabled={isLoading}
         className="flex items-center gap-2 rounded-[10px] border border-border bg-surface px-3.5 py-2 text-sm font-medium hover:bg-surface-muted transition-colors disabled:opacity-60"
       >
@@ -177,6 +179,19 @@ export function ResetPasswordAction({ employeeId }: { employeeId: string }) {
         )}
         Reset Password
       </button>
+
+      <ConfirmDialog
+        open={showConfirm}
+        title="Reset password?"
+        message="Password karyawan akan direset. Password baru hanya tampil sekali di layar."
+        confirmLabel="Ya, reset"
+        variant="warning"
+        onConfirm={() => {
+          setShowConfirm(false);
+          handleReset();
+        }}
+        onCancel={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

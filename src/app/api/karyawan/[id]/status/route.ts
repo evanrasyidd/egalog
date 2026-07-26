@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentActor, actorHasPermission, actorId } from "@/lib/current-actor";
-import { canManageEmployees } from "@/lib/permissions";
+import { canManageEmployees, canEditEmployee } from "@/lib/permissions";
+import { findEmployeeById } from "@/lib/db";
 import { deactivateEmployee, reactivateEmployee, toPublicEmployee } from "@/lib/employees";
 
 const bodySchema = z.object({
@@ -21,6 +22,17 @@ export async function PATCH(
   }
 
   const { id } = await params;
+  const target = findEmployeeById(id);
+  if (!target) {
+    return NextResponse.json({ error: "employee_not_found", message: "Karyawan tidak ditemukan." }, { status: 404 });
+  }
+  if (actor.type === "employee" && !canEditEmployee(actor.employee, target)) {
+    return NextResponse.json(
+      { error: "forbidden", message: "Kamu tidak bisa mengubah status karyawan dengan jabatan setara atau lebih tinggi." },
+      { status: 403 },
+    );
+  }
+
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

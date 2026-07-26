@@ -1,11 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { CalendarDays, Users, ClipboardCheck, ArrowRight, Wallet, TrendingUp } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Dashboard" };
 import { getTodayRecord } from "@/lib/attendance";
 import { getPendingApprovalsFor } from "@/lib/leave";
 import { getPayslipsForEmployee } from "@/lib/payroll";
 import { getFinalReviewsForEmployee } from "@/lib/performance";
-import { getDirectReports, getSubordinateIds, OFFICE_LOCATION } from "@/lib/db";
+import { getDirectReports, getSubordinateIds, getOfficeLocation } from "@/lib/db";
 import { getManageablePerformanceEmployees } from "@/lib/permissions";
 import { ROLE_LEVEL, ROLE_LABEL } from "@/lib/types";
 import { AttendanceWidget } from "@/components/attendance-widget";
@@ -43,7 +46,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card className="lg:col-span-2">
           <h2 className="text-sm font-medium mb-4">Absensi Hari Ini</h2>
-          <AttendanceWidget initialRecord={todayRecord} officeLabel={OFFICE_LOCATION.label} />
+          <AttendanceWidget initialRecord={todayRecord} officeLabel={getOfficeLocation().label} />
         </Card>
 
         <div className="space-y-5">

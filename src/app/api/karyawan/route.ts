@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentActor, actorHasPermission } from "@/lib/current-actor";
-import { canManageEmployees } from "@/lib/permissions";
+import { canManageEmployees, canEditEmployee } from "@/lib/permissions";
+import { ROLE_LEVEL } from "@/lib/types";
 import { createEmployee, toPublicEmployee } from "@/lib/employees";
 
 const bodySchema = z.object({
@@ -31,6 +32,16 @@ export async function POST(request: Request) {
       { error: "invalid_input", message: "Data karyawan tidak lengkap atau tidak valid." },
       { status: 400 },
     );
+  }
+
+  if (actor.type === "employee") {
+    const targetLevel = ROLE_LEVEL[parsed.data.role];
+    if (ROLE_LEVEL[actor.employee.role] >= targetLevel) {
+      return NextResponse.json(
+        { error: "forbidden", message: "Kamu tidak bisa membuat akun dengan jabatan setara atau lebih tinggi dari kamu." },
+        { status: 403 },
+      );
+    }
   }
 
   const result = createEmployee(parsed.data);

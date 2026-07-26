@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Review Karyawan" };
 import { canManagePerformanceFor } from "@/lib/permissions";
 import { findEmployeeById } from "@/lib/db";
 import { findReviewByEmployeeAndCycle, getGoalsForEmployee } from "@/lib/performance";

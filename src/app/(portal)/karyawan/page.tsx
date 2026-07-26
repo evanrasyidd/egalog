@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { UserPlus, ChevronRight } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Karyawan" };
 import { employees, getSubordinateIds } from "@/lib/db";
 import { canManageEmployees } from "@/lib/permissions";
 import { ROLE_LEVEL, ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
@@ -23,10 +26,7 @@ export default async function KaryawanPage({
   const { status } = await searchParams;
   const showInactive = isManager && status === "nonaktif";
 
-  // HR Manager (walau bukan Owner/Direktur) tetap harus lihat SEMUA karyawan
-  // kalau dia punya wewenang kelola karyawan — itu memang fungsi jabatannya,
-  // beda dengan manager departemen lain yang cuma lihat sub-tree tim sendiri.
-  const seesAll = employee.role === "owner" || employee.role === "direktur" || isManager;
+  const seesAll = isManager;
   const visibleIds = seesAll ? null : getSubordinateIds(employee.id);
   const list = employees
     .filter((e) => e.id !== employee.id && (seesAll || visibleIds?.has(e.id)))
@@ -78,7 +78,7 @@ export default async function KaryawanPage({
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Daftar karyawan">
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">
                 <th className="pb-2 font-medium">Nama</th>

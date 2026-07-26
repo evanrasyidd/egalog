@@ -294,6 +294,13 @@ benar (ini gap yang belum di-fix Next.js per versi 16.2.10 — lihat komentar
 di `src/app/layout.tsx`). Tag lama ditambahkan manual, aman coexist dengan
 yang baru.
 
+## Ekosistem EgaLog
+
+| App | Domain | Link |
+|---|---|---|
+| **EgaLog HR** | Manajemen karyawan, absensi, payroll, rekrutmen | (repositori ini) |
+| **EgaLog Logistics** | Armada, gudang, pengiriman | [egalog-logistics.app](https://egalog-logistics.app) |
+
 ## Stack
 
 Next.js 16 (App Router, Turbopack) · TypeScript · Tailwind CSS v4 ·

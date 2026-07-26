@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { employees } from "@/lib/db";
 import { Card, PageHeader } from "@/components/card";
+
+export const metadata: Metadata = { title: "Admin • Karyawan Baru" };
 import { BackLink } from "@/components/back-link";
 import { NewEmployeeForm } from "@/components/new-employee-form";
 

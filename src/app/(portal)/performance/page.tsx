@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Target, ClipboardList } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { getFinalReviewsForEmployee, getGoalsForEmployee } from "@/lib/performance";
+
+export const metadata: Metadata = { title: "Performance" };
 import { COMPETENCIES, COMPETENCY_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { ScoreBar } from "@/components/score-bar";

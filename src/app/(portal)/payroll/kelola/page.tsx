@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Kelola Payroll" };
 import { canManagePayroll } from "@/lib/permissions";
 import { getPayslipsForPeriod } from "@/lib/payroll";
 import { employees } from "@/lib/db";

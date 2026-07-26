@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { clockIn } from "@/lib/attendance";
-import { OFFICE_LOCATION } from "@/lib/db";
+import { getOfficeLocation } from "@/lib/db";
 import { selfieSchema } from "@/lib/selfie-schema";
 
 const bodySchema = z.object({
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: result.error,
-        message: `Lokasi kamu ${Math.round(result.distance ?? 0)}m dari ${OFFICE_LOCATION.label}, di luar radius ${OFFICE_LOCATION.radiusMeters}m yang diizinkan.`,
+        message: `Lokasi kamu ${Math.round(result.distance ?? 0)}m dari ${getOfficeLocation().label}, di luar radius ${getOfficeLocation().radiusMeters}m yang diizinkan.`,
         distance: result.distance,
       },
       { status: 422 },

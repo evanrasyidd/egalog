@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentActor, actorHasPermission } from "@/lib/current-actor";
-import { canManageEmployees } from "@/lib/permissions";
+import { getCurrentActor, actorHasPermission, actorName } from "@/lib/current-actor";
+import { canManageEmployees, canEditEmployee } from "@/lib/permissions";
+import { findEmployeeById } from "@/lib/db";
+import { ROLE_LEVEL } from "@/lib/types";
 import { updateEmployee, toPublicEmployee } from "@/lib/employees";
+import { logActivity } from "@/lib/activity-log";
 
 const bodySchema = z.object({
   jobTitle: z.string().trim().min(2).max(150),
@@ -27,6 +30,16 @@ export async function PATCH(
   }
 
   const { id } = await params;
+  const target = findEmployeeById(id);
+  if (!target) {
+    return NextResponse.json({ error: "employee_not_found", message: "Karyawan tidak ditemukan." }, { status: 404 });
+  }
+  if (actor.type === "employee" && !canEditEmployee(actor.employee, target)) {
+    return NextResponse.json(
+      { error: "forbidden", message: "Kamu tidak bisa mengubah data karyawan dengan jabatan setara atau lebih tinggi." },
+      { status: 403 },
+    );
+  }
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {
@@ -37,6 +50,11 @@ export async function PATCH(
   }
 
   const result = updateEmployee(id, parsed.data);
+  if (result.ok) {
+    const role = actor.type === "admin" ? "admin" : actor.employee.role;
+    const name = actor.type === "admin" ? actor.admin.name : actor.employee.name;
+    logActivity("employee", name, role, `Mengubah data ${result.employee.name}`, `${result.employee.nip} · ${result.employee.jobTitle}`);
+  }
   if (!result.ok) {
     const messages: Record<string, string> = {
       employee_not_found: "Karyawan tidak ditemukan.",

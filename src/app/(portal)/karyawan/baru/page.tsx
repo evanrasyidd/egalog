@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Karyawan Baru" };
 import { canManageEmployees } from "@/lib/permissions";
 import { employees } from "@/lib/db";
 import { Card, PageHeader } from "@/components/card";

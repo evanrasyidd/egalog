@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentActor, actorHasPermission } from "@/lib/current-actor";
-import { canManageEmployees } from "@/lib/permissions";
+import { canManageEmployees, canEditEmployee } from "@/lib/permissions";
+import { findEmployeeById } from "@/lib/db";
 import { resetEmployeePassword } from "@/lib/employees";
 
 export async function POST(
@@ -19,6 +20,17 @@ export async function POST(
   }
 
   const { id } = await params;
+  const target = findEmployeeById(id);
+  if (!target) {
+    return NextResponse.json({ error: "employee_not_found", message: "Karyawan tidak ditemukan." }, { status: 404 });
+  }
+  if (actor.type === "employee" && !canEditEmployee(actor.employee, target)) {
+    return NextResponse.json(
+      { error: "forbidden", message: "Kamu tidak bisa reset password karyawan dengan jabatan setara atau lebih tinggi." },
+      { status: 403 },
+    );
+  }
+
   const result = resetEmployeePassword(id);
   if (!result.ok) {
     return NextResponse.json(

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { canManageRecruitment } from "@/lib/permissions";
+
+export const metadata: Metadata = { title: "Detail Lowongan" };
 import { findJobPostingById, getCandidatesForJob } from "@/lib/recruitment";
 import { DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
@@ -30,13 +33,13 @@ export default async function JobPostingDetailPage({
 }) {
   const employee = await getCurrentEmployee();
   if (!employee) return null;
-  if (!canManageRecruitment(employee)) redirect("/dashboard");
 
   const { id } = await params;
   const posting = findJobPostingById(id);
   if (!posting) notFound();
 
-  const candidateList = getCandidatesForJob(id);
+  const isManager = canManageRecruitment(employee);
+  const candidateList = isManager ? getCandidatesForJob(id) : [];
 
   return (
     <div>
@@ -61,60 +64,62 @@ export default async function JobPostingDetailPage({
         </div>
       </Card>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium">Kandidat ({candidateList.length})</h2>
-        </div>
-
-        <AddCandidateForm jobPostingId={id} />
-
-        {candidateList.length === 0 ? (
-          <Card>
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              Belum ada kandidat untuk lowongan ini.
-            </p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {candidateList.map((c) => (
-              <Card key={c.id}>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div>
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {c.email} · {c.phone}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    Lamar {formatDate(c.appliedAt)}
-                  </span>
-                </div>
-                {c.resumeNote && (
-                  <p className="text-sm text-foreground/80 mb-3">{c.resumeNote}</p>
-                )}
-                {c.resumeFile && (
-                  <a
-                    href={c.resumeFile}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download={c.name.replace(/\s+/g, "_") + "_CV"}
-                    className="inline-flex items-center gap-1.5 mb-3 rounded-[8px] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted transition-colors"
-                  >
-                    Unduh CV
-                  </a>
-                )}
-                <div className="border-t border-border pt-3">
-                  <CandidateStageEditor
-                    candidateId={c.id}
-                    currentStage={c.stage}
-                    currentNotes={c.notes}
-                  />
-                </div>
-              </Card>
-            ))}
+      {isManager && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium">Kandidat ({candidateList.length})</h2>
           </div>
-        )}
-      </div>
+
+          <AddCandidateForm jobPostingId={id} />
+
+          {candidateList.length === 0 ? (
+            <Card>
+              <p className="text-sm text-muted-foreground py-8 text-center">
+                Belum ada kandidat untuk lowongan ini.
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {candidateList.map((c) => (
+                <Card key={c.id}>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                      <p className="text-sm font-medium">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {c.email} · {c.phone}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      Lamar {formatDate(c.appliedAt)}
+                    </span>
+                  </div>
+                  {c.resumeNote && (
+                    <p className="text-sm text-foreground/80 mb-3">{c.resumeNote}</p>
+                  )}
+                  {c.resumeFile && (
+                    <a
+                      href={c.resumeFile}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={c.name.replace(/\s+/g, "_") + "_CV"}
+                      className="inline-flex items-center gap-1.5 mb-3 rounded-[8px] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted transition-colors"
+                    >
+                      Unduh CV
+                    </a>
+                  )}
+                  <div className="border-t border-border pt-3">
+                    <CandidateStageEditor
+                      candidateId={c.id}
+                      currentStage={c.stage}
+                      currentNotes={c.notes}
+                    />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

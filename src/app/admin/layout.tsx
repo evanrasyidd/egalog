@@ -3,6 +3,7 @@ import { getCurrentActor } from "@/lib/current-actor";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminTopbar } from "@/components/admin-topbar";
 import { AdminBottomNav } from "@/components/admin-bottom-nav";
+import { ActivityTracker } from "@/components/activity-tracker";
 
 export default async function AdminLayout({
   children,
@@ -15,7 +16,9 @@ export default async function AdminLayout({
   if (actor.type !== "admin") redirect("/dashboard");
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <>
+      <ActivityTracker />
+      <div className="flex min-h-screen bg-background">
       <AdminSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <AdminTopbar name={actor.admin.name} />
@@ -25,5 +28,6 @@ export default async function AdminLayout({
       </div>
       <AdminBottomNav />
     </div>
+    </>
   );
 }

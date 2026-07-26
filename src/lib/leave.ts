@@ -1,6 +1,7 @@
 import "server-only";
 import { leaveRequests, findEmployeeById, nextLeaveId } from "./db";
 import { buildApprovalChain, isCurrentApprover } from "./permissions";
+import { createNotification } from "./notifications";
 import type { LeaveRequest, LeaveType } from "./types";
 
 function countLeaveDays(startDate: string, endDate: string): number {
@@ -47,12 +48,25 @@ export function createLeaveRequest(
     currentStepIndex: 0,
   };
 
+  leaveRequests.push(request);
+
+  // Notifikasi ke approver pertama (kalau ada)
+  if (approvalChain.length > 0) {
+    const firstApprover = approvalChain[0];
+    createNotification(
+      "leave_requested",
+      firstApprover.approverId,
+      `Pengajuan cuti baru dari ${employee.name}`,
+      `${type === "cuti_tahunan" ? "Cuti Tahunan" : type === "sakit" ? "Sakit" : "Izin"} — ${startDate} s.d. ${endDate}`,
+      "/cuti/approval",
+    );
+  }
+
   // Owner tidak punya atasan -> auto-disetujui, langsung potong saldo kalau cuti tahunan.
   if (approvalChain.length === 0 && type === "cuti_tahunan") {
     employee.leaveBalance -= days;
   }
 
-  leaveRequests.push(request);
   return { ok: true, request };
 }
 
@@ -82,8 +96,20 @@ export function decideLeaveRequest(
   step.decidedAt = new Date().toISOString();
   step.comment = comment;
 
+  const requester = findEmployeeById(request.employeeId);
+  const approver = findEmployeeById(approverId);
+
   if (decision === "ditolak") {
     request.status = "ditolak";
+    if (requester) {
+      createNotification(
+        "leave_rejected",
+        requester.id,
+        "Pengajuan cuti ditolak",
+        `${request.type === "cuti_tahunan" ? "Cuti Tahunan" : request.type === "sakit" ? "Sakit" : "Izin"} — ${request.startDate} s.d. ${request.endDate}${comment ? `. Alasan: ${comment}` : ""}`,
+        "/cuti",
+      );
+    }
     return { ok: true, request };
   }
 
@@ -95,8 +121,28 @@ export function decideLeaveRequest(
       const days = countLeaveDays(request.startDate, request.endDate);
       employee.leaveBalance -= days;
     }
+    if (requester) {
+      createNotification(
+        "leave_approved",
+        requester.id,
+        "Pengajuan cuti disetujui",
+        `${request.type === "cuti_tahunan" ? "Cuti Tahunan" : request.type === "sakit" ? "Sakit" : "Izin"} — ${request.startDate} s.d. ${request.endDate}`,
+        "/cuti",
+      );
+    }
   } else {
     request.currentStepIndex += 1;
+    // Notifikasi ke approver berikutnya
+    const nextStep = request.approvalChain[request.currentStepIndex];
+    if (nextStep && requester) {
+      createNotification(
+        "leave_requested",
+        nextStep.approverId,
+        `Pengajuan cuti dari ${requester.name} butuh persetujuanmu`,
+        `${request.type === "cuti_tahunan" ? "Cuti Tahunan" : request.type === "sakit" ? "Sakit" : "Izin"} — ${request.startDate} s.d. ${request.endDate}`,
+        "/cuti/approval",
+      );
+    }
   }
 
   return { ok: true, request };

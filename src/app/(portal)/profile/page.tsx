@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { findEmployeeById } from "@/lib/db";
+
+export const metadata: Metadata = { title: "Profil" };
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { AvatarColorPicker } from "./avatar-color-picker";

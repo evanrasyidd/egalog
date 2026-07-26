@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Loader2 } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { LeaveRequest } from "@/lib/types";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -30,6 +31,7 @@ export function ApprovalList({
   const router = useRouter();
   const showToast = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDecision(id: string, decision: "disetujui" | "ditolak") {
@@ -103,7 +105,7 @@ export function ApprovalList({
               </button>
               <button
                 type="button"
-                onClick={() => handleDecision(r.id, "ditolak")}
+                onClick={() => setRejectTarget(r.id)}
                 disabled={loadingId === r.id}
                 aria-label="Tolak"
                 className="h-9 w-9 flex items-center justify-center rounded-[8px] bg-danger/10 text-danger hover:bg-danger/20 transition-colors disabled:opacity-50"
@@ -114,6 +116,19 @@ export function ApprovalList({
           </div>
         </div>
       ))}
+
+      <ConfirmDialog
+        open={rejectTarget !== null}
+        title="Tolak pengajuan ini?"
+        message="Pengajuan cuti/izin akan ditolak dan tidak bisa dibatalkan."
+        confirmLabel="Ya, tolak"
+        variant="danger"
+        onConfirm={() => {
+          if (rejectTarget) handleDecision(rejectTarget, "ditolak");
+          setRejectTarget(null);
+        }}
+        onCancel={() => setRejectTarget(null)}
+      />
     </div>
   );
 }

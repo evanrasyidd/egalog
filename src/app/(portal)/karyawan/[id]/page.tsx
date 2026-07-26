@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
-import { canManageEmployees, canViewEmployeeData } from "@/lib/permissions";
+import { canManageEmployees, canEditEmployee, canViewEmployeeData } from "@/lib/permissions";
+
+export const metadata: Metadata = { title: "Detail Karyawan" };
 import { employees, findEmployeeById, getSubordinateIds } from "@/lib/db";
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
@@ -30,11 +33,11 @@ export default async function EmployeeDetailPage({
   // Owner/Direktur/HR (canManageEmployees) boleh buka semua. Role lain cuma
   // boleh lihat bawahannya sendiri (langsung maupun tidak langsung) sebagai
   // read-only — sesuai garis komando, tanpa wewenang edit.
-  const canManage = canManageEmployees(actor);
-  if (!canManage && !canViewEmployeeData(actor.id, id)) redirect("/dashboard");
-
   const target = findEmployeeById(id);
   if (!target) notFound();
+
+  const canManage = canManageEmployees(actor) && canEditEmployee(actor, target);
+  if (!canManage && !canViewEmployeeData(actor.id, id)) redirect("/dashboard");
 
   // Opsi atasan: semua karyawan aktif KECUALI diri sendiri & bawahannya
   // sendiri (biar nggak bisa milih opsi yang bakal ditolak server karena

@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Approval Cuti" };
 import { getPendingApprovalsFor } from "@/lib/leave";
 import { findEmployeeById } from "@/lib/db";
 import { ROLE_LEVEL } from "@/lib/types";

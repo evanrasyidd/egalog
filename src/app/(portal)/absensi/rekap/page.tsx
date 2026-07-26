@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
+
+export const metadata: Metadata = { title: "Rekap Absensi" };
 import { getSubordinateIds, findEmployeeById } from "@/lib/db";
 import { getTodayRecord } from "@/lib/attendance";
 import { ROLE_LEVEL, ROLE_LABEL } from "@/lib/types";
@@ -47,8 +50,8 @@ export default async function RekapAbsensiPage() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
+            <table className="w-full text-sm" aria-label="Rekap absensi tim">
+                <thead>
                 <tr className="text-left text-xs text-muted-foreground border-b border-border">
                   <th className="pb-2 font-medium">Nama</th>
                   <th className="pb-2 font-medium">Jabatan</th>

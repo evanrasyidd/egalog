@@ -1,8 +1,11 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { LoginForm } from "./login-form";
 import { DemoAccountsPopover } from "./demo-accounts-popover";
 import { Boxes } from "lucide-react";
+
+export const metadata: Metadata = { title: "Masuk" };
 
 export default function LoginPage() {
   return (

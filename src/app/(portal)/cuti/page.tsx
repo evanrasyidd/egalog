@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { getRequestsForEmployees } from "@/lib/leave";
+
+export const metadata: Metadata = { title: "Cuti" };
 import { findEmployeeById } from "@/lib/db";
 import { ROLE_LABEL } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";

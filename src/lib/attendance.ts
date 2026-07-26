@@ -1,10 +1,9 @@
 import "server-only";
 import { attendanceRecords, nextAttendanceId } from "./db";
 import { isWithinOfficeRadius } from "./geofence";
+import { getSystemSettings } from "./settings";
 import type { AttendanceRecord } from "./types";
 
-const WORK_START_HOUR = 8;
-const WORK_START_MINUTE = 15; // toleransi 15 menit dari jam 08:00
 const TIMEZONE_OFFSET_HOURS = 7; // WIB (Asia/Jakarta)
 
 function todayDateString(): string {
@@ -38,12 +37,13 @@ export function clockIn(
     return { ok: false, error: "outside_radius", distance };
   }
 
+  const settings = getSystemSettings();
   const now = new Date();
   const wibNow = new Date(now.getTime() + TIMEZONE_OFFSET_HOURS * 60 * 60 * 1000);
   const isLate =
-    wibNow.getUTCHours() > WORK_START_HOUR ||
-    (wibNow.getUTCHours() === WORK_START_HOUR &&
-      wibNow.getUTCMinutes() > WORK_START_MINUTE);
+    wibNow.getUTCHours() > settings.workStartHour ||
+    (wibNow.getUTCHours() === settings.workStartHour &&
+      wibNow.getUTCMinutes() > settings.workStartMinute);
 
   const record: AttendanceRecord = existing ?? {
     id: nextAttendanceId(),

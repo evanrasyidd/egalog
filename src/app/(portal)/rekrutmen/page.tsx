@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Briefcase, Users, ChevronRight } from "lucide-react";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { canManageRecruitment } from "@/lib/permissions";
+
+export const metadata: Metadata = { title: "Rekrutmen" };
 import { getAllJobPostings, getOpenJobPostings, getCandidateCountsByJob } from "@/lib/recruitment";
 import { DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
@@ -74,12 +77,10 @@ export default async function RekrutmenPage() {
               </>
             );
 
-            return isManager ? (
+            return (
               <Link key={job.id} href={`/rekrutmen/${job.id}`} className="block">
                 <Card className="hover:border-primary/40 transition-colors">{content}</Card>
               </Link>
-            ) : (
-              <Card key={job.id}>{content}</Card>
             );
           })}
         </div>

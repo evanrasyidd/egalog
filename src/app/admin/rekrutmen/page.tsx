@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Briefcase, Users, ChevronRight } from "lucide-react";
 import { getAllJobPostings, getCandidateCountsByJob } from "@/lib/recruitment";
+
+export const metadata: Metadata = { title: "Admin • Rekrutmen" };
 import { DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { StatusBadge } from "@/components/status-badge";

@@ -1,4 +1,4 @@
-import { OFFICE_LOCATION } from "./db";
+import { getOfficeLocation } from "./db";
 
 const EARTH_RADIUS_METERS = 6371000;
 
@@ -26,6 +26,7 @@ export function isWithinOfficeRadius(point: { lat: number; lng: number }): {
   withinRadius: boolean;
   distance: number;
 } {
-  const distance = distanceInMeters(point, OFFICE_LOCATION);
-  return { withinRadius: distance <= OFFICE_LOCATION.radiusMeters, distance };
+  const office = getOfficeLocation();
+  const distance = distanceInMeters(point, office);
+  return { withinRadius: distance <= office.radiusMeters, distance };
 }

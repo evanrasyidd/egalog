@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { UserPlus, ChevronRight } from "lucide-react";
 import { employees } from "@/lib/db";
+
+export const metadata: Metadata = { title: "Admin • Karyawan" };
 import { ROLE_LEVEL, ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { Avatar } from "@/components/avatar";
@@ -58,7 +61,7 @@ export default async function AdminKaryawanPage({
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" aria-label="Daftar karyawan (admin)">
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">
                 <th className="pb-2 font-medium">Nama</th>

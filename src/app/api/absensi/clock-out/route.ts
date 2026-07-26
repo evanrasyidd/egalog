@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { clockOut } from "@/lib/attendance";
-import { OFFICE_LOCATION } from "@/lib/db";
+import { getOfficeLocation } from "@/lib/db";
 import { selfieSchema } from "@/lib/selfie-schema";
 
 const bodySchema = z.object({
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const messages: Record<string, string> = {
       not_clocked_in: "Kamu belum absen masuk hari ini.",
       already_clocked_out: "Kamu sudah absen pulang hari ini.",
-      outside_radius: `Lokasi kamu ${Math.round(result.distance ?? 0)}m dari ${OFFICE_LOCATION.label}, di luar radius ${OFFICE_LOCATION.radiusMeters}m yang diizinkan.`,
+      outside_radius: `Lokasi kamu ${Math.round(result.distance ?? 0)}m dari ${getOfficeLocation().label}, di luar radius ${getOfficeLocation().radiusMeters}m yang diizinkan.`,
     };
     const status = result.error === "outside_radius" ? 422 : 409;
     return NextResponse.json(

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentActor, actorHasPermission, actorId } from "@/lib/current-actor";
 import { canManagePayroll } from "@/lib/permissions";
+import { logActivity } from "@/lib/activity-log";
 import {
   generatePayslip,
   generatePayslipsForAll,
@@ -91,12 +92,21 @@ export async function POST(request: Request) {
 
   const generatedBy = actorId(actor);
 
+  const role = actor.type === "admin" ? "admin" : actor.employee.role;
+  const name = actor.type === "admin" ? actor.admin.name : actor.employee.name;
+
   if (parsed.data.mode === "all") {
     const summary = generatePayslipsForAll(employees, parsed.data.period, generatedBy);
+    logActivity("payroll", name, role, `Generate payroll semua karyawan`, `Periode ${parsed.data.period}`);
     return NextResponse.json({ ok: true, summary });
   }
 
-  const result = generatePayslip(parsed.data.employeeId, parsed.data.period, generatedBy);
+  const { employeeId, period } = parsed.data;
+  const result = generatePayslip(employeeId, period, generatedBy);
+  if (result.ok) {
+    const emp = employees.find((e) => e.id === employeeId);
+    logActivity("payroll", name, role, `Generate payroll ${emp?.name ?? employeeId}`, `Periode ${period}`);
+  }
   if (!result.ok) {
     const messages: Record<string, string> = {
       already_exists: "Slip gaji untuk karyawan & periode ini sudah pernah dibuat.",

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { getTodayRecord, getRecordsForEmployees } from "@/lib/attendance";
-import { OFFICE_LOCATION } from "@/lib/db";
+
+export const metadata: Metadata = { title: "Absensi" };
+import { getOfficeLocation } from "@/lib/db";
 import { AttendanceWidget } from "@/components/attendance-widget";
 import { StatusBadge } from "@/components/status-badge";
 import { SelfieThumbnail } from "@/components/selfie-thumbnail";
@@ -40,7 +43,7 @@ export default async function AbsensiPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card className="lg:col-span-1 h-fit">
           <h2 className="text-sm font-medium mb-4">Hari Ini</h2>
-          <AttendanceWidget initialRecord={todayRecord} officeLabel={OFFICE_LOCATION.label} />
+          <AttendanceWidget initialRecord={todayRecord} officeLabel={getOfficeLocation().label} />
         </Card>
 
         <Card className="lg:col-span-2">
@@ -51,7 +54,7 @@ export default async function AbsensiPage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm" aria-label="Riwayat absensi">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground border-b border-border">
                     <th className="pb-2 font-medium">Tanggal</th>

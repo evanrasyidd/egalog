@@ -242,3 +242,78 @@ export interface Candidate {
   updatedBy: string;
 }
 
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+export type NotificationType =
+  | "leave_requested"
+  | "leave_approved"
+  | "leave_rejected"
+  | "payroll_generated"
+  | "review_submitted"
+  | "goal_assigned"
+  | "announcement";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  targetEmployeeId: string | null; // null = broadcast (semua karyawan)
+  title: string;
+  message: string;
+  link: string | null; // relative path, misal "/cuti" atau "/payroll"
+  isRead: boolean;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Holidays
+// ---------------------------------------------------------------------------
+
+export interface Holiday {
+  date: string; // YYYY-MM-DD
+  name: string;
+  isNational: boolean; // libur nasional vs cuti bersama
+}
+
+// ---------------------------------------------------------------------------
+// Announcements
+// ---------------------------------------------------------------------------
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  createdBy: string; // employeeId
+  createdAt: string;
+  priority: "normal" | "penting";
+}
+
+// ---------------------------------------------------------------------------
+// System Settings
+// ---------------------------------------------------------------------------
+
+export interface SystemSettings {
+  workStartHour: number; // default 8
+  workStartMinute: number; // default 0
+  geofenceRadiusMeters: number; // default 300
+  officeLat: number;
+  officeLng: number;
+  officeLabel: string;
+  dailyTransportAllowance: number;
+  dailyMealAllowance: number;
+  latePenaltyPerDay: number;
+  bpjsRate: number; // 0-1
+}
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+
+export interface SearchResult {
+  type: "karyawan" | "departemen" | "jabatan" | "cuti" | "pengumuman";
+  label: string;
+  description: string;
+  link: string;
+}
+

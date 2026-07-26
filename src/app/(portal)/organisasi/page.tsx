@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
+import { getCurrentEmployee } from "@/lib/current-employee";
 import { employees, getDirectReports } from "@/lib/db";
+
+export const metadata: Metadata = { title: "Organisasi" };
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import type { Employee } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
@@ -33,9 +37,19 @@ function OrgNode({ person, depth }: { person: Employee; depth: number }) {
   );
 }
 
-export default function OrganisasiPage() {
+export default async function OrganisasiPage() {
+  const employee = await getCurrentEmployee();
+  if (!employee) return null;
+
   const owner = employees.find((e) => e.role === "owner");
-  if (!owner) return null;
+  if (!owner) {
+    return (
+      <div>
+        <PageHeader title="Struktur Organisasi" />
+        <p className="text-sm text-muted-foreground py-8 text-center">Data organisasi belum tersedia.</p>
+      </div>
+    );
+  }
 
   return (
     <div>

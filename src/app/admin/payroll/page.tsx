@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { getPayslipsForPeriod } from "@/lib/payroll";
 import { employees } from "@/lib/db";
 import { Card, PageHeader } from "@/components/card";
+
+export const metadata: Metadata = { title: "Admin • Payroll" };
 import { PayrollManager } from "@/components/payroll-manager";
 
 function currentPeriod(): string {

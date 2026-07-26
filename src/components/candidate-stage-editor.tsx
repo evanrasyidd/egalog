@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import type { CandidateStage } from "@/lib/types";
 
 const STAGE_OPTIONS: { value: CandidateStage; label: string }[] = [
@@ -29,6 +30,7 @@ export function CandidateStageEditor({
   const [notes, setNotes] = useState(currentNotes);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
   const isDirty = stage !== currentStage || notes !== currentNotes;
 
@@ -74,7 +76,10 @@ export function CandidateStageEditor({
         {isDirty && (
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => {
+              if (stage === "ditolak") setShowRejectConfirm(true);
+              else handleSave();
+            }}
             disabled={isSaving}
             className="inline-flex items-center gap-1.5 rounded-[8px] bg-primary text-primary-foreground px-2.5 py-1.5 text-xs font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
           >
@@ -87,6 +92,16 @@ export function CandidateStageEditor({
           </button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showRejectConfirm}
+        title="Tolak kandidat ini?"
+        message="Kandidat akan ditandai sebagai Ditolak. Tindakan ini bisa diubah nanti."
+        confirmLabel="Ya, tolak"
+        variant="danger"
+        onConfirm={() => { setShowRejectConfirm(false); handleSave(); }}
+        onCancel={() => { setShowRejectConfirm(false); setStage(currentStage); }}
+      />
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}

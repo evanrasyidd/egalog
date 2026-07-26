@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { employees, findEmployeeById, getSubordinateIds } from "@/lib/db";
+
+export const metadata: Metadata = { title: "Admin • Detail Karyawan" };
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { Card, PageHeader } from "@/components/card";
 import { BackLink } from "@/components/back-link";

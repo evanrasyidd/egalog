@@ -10,6 +10,10 @@ import type {
   JobPosting,
   Candidate,
   AdminAccount,
+  Notification,
+  Holiday,
+  Announcement,
+  SystemSettings,
   Role,
   Department,
 } from "./types";
@@ -73,7 +77,11 @@ interface Counters {
   goal: number;
   job: number;
   candidate: number;
-  employeeSequence: number; // buat generate NIP karyawan baru
+  notification: number;
+  announcement: number;
+  employeeSequence: number;
+  activityLog: number;
+  holiday: number;
 }
 
 interface Store {
@@ -85,8 +93,23 @@ interface Store {
   goals: Goal[];
   jobPostings: JobPosting[];
   candidates: Candidate[];
+  notifications: Notification[];
+  holidays: Holiday[];
+  announcements: Announcement[];
+  systemSettings: SystemSettings;
   adminAccounts: AdminAccount[];
+  activityLogEntries: ActivityLogEntry[];
   counters: Counters;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  type: "employee" | "payroll" | "leave" | "rekrutmen" | "pengaturan" | "holiday" | "announcement" | "system";
+  actor: string;
+  actorRole: string;
+  action: string;
+  target: string;
+  createdAt: string;
 }
 
 function createInitialStore(): Store {
@@ -214,7 +237,23 @@ function createInitialStore(): Store {
     goals: [],
     jobPostings,
     candidates,
+    notifications: [],
+    holidays: createSeedHolidays(),
+    announcements: [],
+    systemSettings: {
+      workStartHour: 8,
+      workStartMinute: 0,
+      geofenceRadiusMeters: 300,
+      officeLat: -6.3844303,
+      officeLng: 106.8124087,
+      officeLabel: "Balai Rakyat Beji, Depok",
+      dailyTransportAllowance: 50_000,
+      dailyMealAllowance: 35_000,
+      latePenaltyPerDay: 25_000,
+      bpjsRate: 0.04,
+    },
     adminAccounts,
+    activityLogEntries: [],
     counters: {
       attendance: 1,
       leave: 1,
@@ -223,9 +262,38 @@ function createInitialStore(): Store {
       goal: 1,
       job: jobPostings.length + 1,
       candidate: candidates.length + 1,
-      employeeSequence: 37, // lanjut dari NIP tertinggi seed (VTK-0036)
+      notification: 1,
+      announcement: 1,
+      employeeSequence: 37,
+      activityLog: 1,
+      holiday: 21,
     },
   };
+}
+
+function createSeedHolidays(): Holiday[] {
+  return [
+    { date: "2026-01-01", name: "Tahun Baru 2026", isNational: true },
+    { date: "2026-01-28", name: "Tahun Baru Imlek 2577", isNational: true },
+    { date: "2026-03-29", name: "Hari Raya Nyepi 1948", isNational: true },
+    { date: "2026-03-31", name: "Wafat Isa Almasih", isNational: true },
+    { date: "2026-04-01", name: "Cuti Bersama Idul Fitri", isNational: false },
+    { date: "2026-04-02", name: "Cuti Bersama Idul Fitri", isNational: false },
+    { date: "2026-04-03", name: "Cuti Bersama Idul Fitri", isNational: false },
+    { date: "2026-04-06", name: "Idul Fitri 1447 H", isNational: true },
+    { date: "2026-04-07", name: "Idul Fitri 1447 H", isNational: true },
+    { date: "2026-05-01", name: "Hari Buruh Internasional", isNational: true },
+    { date: "2026-05-21", name: "Hari Raya Waisak 2570", isNational: true },
+    { date: "2026-05-28", name: "Kenaikan Isa Almasih", isNational: true },
+    { date: "2026-06-01", name: "Hari Lahir Pancasila", isNational: true },
+    { date: "2026-06-12", name: "Idul Adha 1447 H", isNational: true },
+    { date: "2026-07-03", name: "Tahun Baru Islam 1448 H", isNational: true },
+    { date: "2026-08-17", name: "Hari Kemerdekaan RI", isNational: true },
+    { date: "2026-09-05", name: "Maulid Nabi Muhammad SAW", isNational: true },
+    { date: "2026-10-28", name: "Sumpah Pemuda", isNational: true },
+    { date: "2026-12-25", name: "Hari Raya Natal", isNational: true },
+    { date: "2026-12-26", name: "Cuti Bersama Natal", isNational: false },
+  ];
 }
 
 const globalForStore = globalThis as unknown as { __egalogHrStore?: Store };
@@ -242,15 +310,16 @@ export const performanceReviews = store.performanceReviews;
 export const goals = store.goals;
 export const jobPostings = store.jobPostings;
 export const candidates = store.candidates;
+export const notifications = store.notifications;
+export const holidays = store.holidays;
+export const announcements = store.announcements;
+export const systemSettings = store.systemSettings;
+export const activityLogEntries = store.activityLogEntries;
 
-// Kantor pusat EgaLog (dummy) — dipakai untuk validasi geofence absensi.
-// Koordinat: Balai Rakyat Beji, Depok (real coordinates dari Google Places).
-export const OFFICE_LOCATION = {
-  lat: -6.3844303,
-  lng: 106.8124087,
-  label: "Balai Rakyat Beji, Depok",
-  radiusMeters: 300,
-};
+export function getOfficeLocation() {
+  const s = store.systemSettings;
+  return { lat: s.officeLat, lng: s.officeLng, label: s.officeLabel, radiusMeters: s.geofenceRadiusMeters };
+}
 
 export function findEmployeeByEmail(email: string): Employee | undefined {
   return employees.find((e) => e.email.toLowerCase() === email.toLowerCase());
@@ -320,4 +389,46 @@ export function nextCandidateId(): string {
 
 export function nextNip(): string {
   return `VTK-${String(store.counters.employeeSequence++).padStart(4, "0")}`;
+}
+
+export function nextNotificationId(): string {
+  return `notif-${store.counters.notification++}`;
+}
+
+export function nextAnnouncementId(): string {
+  return `ann-${store.counters.announcement++}`;
+}
+
+export function nextActivityLogId(): string {
+  return `log-${store.counters.activityLog++}`;
+}
+
+export function nextHolidayId(): string {
+  return `holiday-${store.counters.holiday++}`;
+}
+
+export function isHoliday(dateStr: string): boolean {
+  return store.holidays.some((h) => h.date === dateStr);
+}
+
+export function getHolidayName(dateStr: string): string | undefined {
+  return store.holidays.find((h) => h.date === dateStr)?.name;
+}
+
+// ---------------------------------------------------------------------------
+// Utility helpers
+// ---------------------------------------------------------------------------
+
+export function getWorkingDaysInPeriod(period: string): string[] {
+  const [year, month] = period.split("-").map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const dates: string[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${period}-${String(day).padStart(2, "0")}`;
+    const d = new Date(`${dateStr}T00:00:00`);
+    if (d.getDay() !== 0 && d.getDay() !== 6 && !isHoliday(dateStr)) {
+      dates.push(dateStr);
+    }
+  }
+  return dates;
 }

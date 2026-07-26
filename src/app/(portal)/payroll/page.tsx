@@ -1,6 +1,9 @@
 import { Download, FileText } from "lucide-react";
+import type { Metadata } from "next";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { getPayslipsForEmployee } from "@/lib/payroll";
+
+export const metadata: Metadata = { title: "Payroll" };
 import { Card, PageHeader } from "@/components/card";
 import { formatCurrency, formatPeriodLabel } from "@/lib/format";
 

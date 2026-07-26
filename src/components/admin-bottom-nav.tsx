@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Banknote, Briefcase } from "lucide-react";
+import { Users, Banknote, TrendingUp, Settings, FileText, Briefcase } from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin/karyawan", label: "Karyawan", icon: Users },
   { href: "/admin/payroll", label: "Payroll", icon: Banknote },
-  { href: "/admin/rekrutmen", label: "Rekrutmen", icon: Briefcase },
+  { href: "/admin/laporan", label: "Laporan", icon: FileText },
+  { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
+  { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
 ];
 
 export function AdminBottomNav() {

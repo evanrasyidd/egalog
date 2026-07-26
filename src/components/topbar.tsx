@@ -1,17 +1,22 @@
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Avatar } from "./avatar";
+import { GlobalSearch } from "./global-search";
+import { NotificationBell } from "./notification-bell";
 import { ROLE_LABEL, DEPARTMENT_LABEL } from "@/lib/types";
 import type { Employee } from "@/lib/types";
 
 export function Topbar({ employee }: { employee: Employee }) {
   return (
     <header className="h-16 border-b border-border bg-surface flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-3">
-      <div className="text-sm text-muted-foreground truncate">
+      <div className="text-sm text-muted-foreground truncate hidden sm:block">
         {DEPARTMENT_LABEL[employee.department]}
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2 shrink-0 ml-auto">
+        <GlobalSearch />
+        <NotificationBell />
         <Link
           href="/profile"
           className="flex items-center gap-3 rounded-[8px] px-2 py-1 -mx-2 hover:bg-surface-muted transition-colors"

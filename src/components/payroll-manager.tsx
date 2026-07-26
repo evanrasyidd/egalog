@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Play, Download, TriangleAlert, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface EmployeeRow {
   id: string;
@@ -34,6 +35,7 @@ export function PayrollManager({
   const [period, setPeriod] = useState(initialPeriod);
   const [isBulkLoading, setIsBulkLoading] = useState(false);
   const [loadingRowId, setLoadingRowId] = useState<string | null>(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -111,7 +113,7 @@ export function PayrollManager({
         </div>
         <button
           type="button"
-          onClick={handleBulkGenerate}
+          onClick={() => setShowBulkConfirm(true)}
           disabled={isBulkLoading}
           className="flex items-center gap-2 rounded-[10px] bg-primary text-primary-foreground px-4 py-2.5 text-sm font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
         >
@@ -123,6 +125,16 @@ export function PayrollManager({
           Generate Semua Karyawan
         </button>
       </div>
+
+      <ConfirmDialog
+        open={showBulkConfirm}
+        title="Generate payroll semua karyawan?"
+        message={`Payroll periode ${period} akan digenerate untuk ${rows.length} karyawan. Karyawan yang sudah memiliki slip gaji periode ini akan dilewati.`}
+        confirmLabel="Ya, generate"
+        variant="warning"
+        onConfirm={() => { setShowBulkConfirm(false); handleBulkGenerate(); }}
+        onCancel={() => setShowBulkConfirm(false)}
+      />
 
       {error && (
         <div
@@ -141,55 +153,59 @@ export function PayrollManager({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-xs text-muted-foreground border-b border-border">
-              <th className="pb-2 font-medium">Karyawan</th>
-              <th className="pb-2 font-medium">NIP</th>
-              <th className="pb-2 font-medium">Gaji Bersih</th>
-              <th className="pb-2 font-medium">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td className="py-2.5">
-                  <p className="font-medium">{row.name}</p>
-                  <p className="text-xs text-muted-foreground">{row.jobTitle}</p>
-                </td>
-                <td className="py-2.5 font-mono text-muted-foreground">{row.nip}</td>
-                <td className="py-2.5 font-mono">
-                  {row.netPay !== null ? formatCurrency(row.netPay) : "—"}
-                </td>
-                <td className="py-2.5">
-                  {row.payslipId ? (
-                    <a
-                      href={`/api/payroll/${row.payslipId}/pdf`}
-                      className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-surface px-2.5 py-1 text-xs font-medium hover:bg-surface-muted transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      PDF
-                    </a>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleSingleGenerate(row.id)}
-                      disabled={loadingRowId === row.id}
-                      className="inline-flex items-center gap-1.5 rounded-[8px] bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
-                    >
-                      {loadingRowId === row.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
-                      ) : (
-                        <Play className="h-3.5 w-3.5" strokeWidth={1.75} />
-                      )}
-                      Generate
-                    </button>
-                  )}
-                </td>
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-6 text-center">Tidak ada data karyawan.</p>
+        ) : (
+          <table className="w-full text-sm" aria-label="Daftar payroll karyawan">
+            <thead>
+              <tr className="text-left text-xs text-muted-foreground border-b border-border">
+                <th className="pb-2 font-medium">Karyawan</th>
+                <th className="pb-2 font-medium">NIP</th>
+                <th className="pb-2 font-medium">Gaji Bersih</th>
+                <th className="pb-2 font-medium">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td className="py-2.5">
+                    <p className="font-medium">{row.name}</p>
+                    <p className="text-xs text-muted-foreground">{row.jobTitle}</p>
+                  </td>
+                  <td className="py-2.5 font-mono text-muted-foreground">{row.nip}</td>
+                  <td className="py-2.5 font-mono">
+                    {row.netPay !== null ? formatCurrency(row.netPay) : "—"}
+                  </td>
+                  <td className="py-2.5">
+                    {row.payslipId ? (
+                      <a
+                        href={`/api/payroll/${row.payslipId}/pdf`}
+                        className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-surface px-2.5 py-1 text-xs font-medium hover:bg-surface-muted transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        PDF
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleSingleGenerate(row.id)}
+                        disabled={loadingRowId === row.id}
+                        className="inline-flex items-center gap-1.5 rounded-[8px] bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium hover:bg-primary-soft transition-colors disabled:opacity-60"
+                      >
+                        {loadingRowId === row.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2} />
+                        ) : (
+                          <Play className="h-3.5 w-3.5" strokeWidth={1.75} />
+                        )}
+                        Generate
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

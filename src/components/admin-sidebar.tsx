@@ -2,12 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, Users, Banknote, Briefcase } from "lucide-react";
+import {
+  Boxes, Users, Banknote, Briefcase, TrendingUp, Settings, Megaphone,
+  CalendarDays, Bell, Network, FileText, ShieldCheck, Activity,
+} from "lucide-react";
 
 const ADMIN_NAV_ITEMS = [
   { href: "/admin/karyawan", label: "Kelola Karyawan", icon: Users },
   { href: "/admin/payroll", label: "Kelola Payroll", icon: Banknote },
   { href: "/admin/rekrutmen", label: "Kelola Rekrutmen", icon: Briefcase },
+  { href: "/admin/analytics", label: "HR Analytics", icon: TrendingUp },
+  { href: "/admin/laporan", label: "Laporan & Ekspor", icon: FileText },
+  { href: "/admin/aktivitas", label: "Aktivitas Sistem", icon: ShieldCheck },
+  { href: "/admin/hari-libur", label: "Hari Libur", icon: CalendarDays },
+  { href: "/admin/pengumuman", label: "Pengumuman", icon: Megaphone },
+  { href: "/admin/pengaturan", label: "Pengaturan", icon: Settings },
+  { href: "/admin/notifikasi", label: "Notifikasi", icon: Bell },
+  { href: "/admin/organisasi", label: "Organisasi", icon: Network },
 ];
 
 export function AdminSidebar() {

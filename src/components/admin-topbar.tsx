@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import { LogoutButton } from "./logout-button";
+import { NotificationBell } from "./notification-bell";
 
 export function AdminTopbar({ name }: { name: string }) {
   return (
@@ -10,6 +11,7 @@ export function AdminTopbar({ name }: { name: string }) {
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
+        <NotificationBell apiBase="/api/admin/notifications" listLink="/admin/notifikasi" />
         <span className="text-sm font-medium">{name}</span>
         <LogoutButton />
       </div>
