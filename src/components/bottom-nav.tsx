@@ -11,6 +11,8 @@ import {
   getNavEntryChildren,
   PRIMARY_NAV_ITEMS,
   type NavAccess,
+  type NavEntry,
+  type NavItem,
 } from "@/lib/nav-items";
 import { ConfirmDialog } from "./confirm-dialog";
 
@@ -42,9 +44,19 @@ export function BottomNav(access: NavAccess) {
   }, []);
 
   const primaryHrefs = new Set(PRIMARY_NAV_ITEMS.map((p) => p.href));
+
+  const hiddenPrimaryChildren: NavItem[] = [];
+  for (const entry of allEntries) {
+    if (primaryHrefs.has(entry.href)) {
+      const children = getNavEntryChildren(entry);
+      if (children.length > 0) hiddenPrimaryChildren.push(...children);
+    }
+  }
+
   const overflowEntries = allEntries.filter(
     (entry) => !primaryHrefs.has(entry.href),
   );
+  const drawerEntries: NavEntry[] = [...overflowEntries, ...hiddenPrimaryChildren];
 
   if (pathname !== prevPathname) {
     setPrevPathname(pathname);
@@ -62,7 +74,7 @@ export function BottomNav(access: NavAccess) {
   }, [isMenuOpen]);
 
   const isMenuActive =
-    overflowEntries.some((entry) => isNavEntryActive(pathname, entry)) || pathname === "/profile";
+    drawerEntries.some((entry) => isNavEntryActive(pathname, entry)) || pathname === "/profile";
 
   return (
     <>
@@ -135,7 +147,7 @@ export function BottomNav(access: NavAccess) {
             </div>
 
             <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-              {overflowEntries.map((entry) => {
+              {drawerEntries.map((entry) => {
                 const children = getNavEntryChildren(entry);
                 if (children.length > 0) {
                   const isParentActive = isNavItemActive(pathname, entry);
