@@ -13,17 +13,9 @@ export function ActivityTracker() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const now = Date.now();
-    const last = localStorage.getItem(STORAGE_KEY);
-    if (last && now - Number(last) > INACTIVITY_MS) {
-      fetch("/api/auth/logout", { method: "POST" }).finally(() => {
-        router.push("/login");
-      });
-      return;
-    }
-    localStorage.setItem(STORAGE_KEY, String(now));
+    localStorage.setItem(STORAGE_KEY, String(Date.now()));
 
-    let lastUpdate = now;
+    let lastUpdate = Date.now();
 
     function handleActivity() {
       const ts = Date.now();
