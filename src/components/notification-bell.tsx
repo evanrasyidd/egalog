@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { Bell, Loader2 } from "lucide-react";
 import type { Notification } from "@/lib/types";
 
 function timeAgo(iso: string): string {
@@ -47,7 +47,6 @@ export function NotificationBell({
 
   useEffect(() => {
     if (!isOpen) return;
-    setLoading(true);
     fetch(apiBase)
       .then((r) => r.json())
       .then((d) => {
@@ -83,13 +82,19 @@ export function NotificationBell({
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label={`Notifikasi${unread && unread > 0 ? ` (${unread} belum dibaca)` : ""}`}
+        onClick={() => {
+          const next = !isOpen;
+          setIsOpen(next);
+          if (next) setLoading(true);
+        }}
         className="relative h-9 w-9 flex items-center justify-center rounded-[8px] text-muted-foreground hover:bg-surface-muted transition-colors"
       >
-        <Bell className="h-4 w-4" strokeWidth={1.75} />
+        <span className="sr-only">
+          Notifikasi{unread !== null && unread > 0 ? `, ${unread} belum dibaca` : ""}
+        </span>
+        <Bell className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
         {unread !== null && unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white px-1">
+          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] flex items-center justify-center rounded-full bg-danger text-[10px] font-bold text-white px-1">
             {unread > 9 ? "9+" : unread}
           </span>
         )}

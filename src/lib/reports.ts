@@ -1,18 +1,20 @@
 import "server-only";
 import { employees, attendanceRecords, leaveRequests, payslips, getSubordinateIds } from "./db";
-import { ROLE_LEVEL } from "./types";
+import { canViewAllEmployees } from "./permissions";
 import type { Employee } from "./types";
 
 function escapeCsv(val: string | number): string {
-  const s = String(val);
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+  let s = String(val ?? "");
+  // CSV injection: sel yang diawali =, +, -, @ bisa dieksekusi spreadsheet.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
     return `"${s.replace(/"/g, '""')}"`;
   }
   return s;
 }
 
 function toCsv(rows: string[][]): string {
-  return rows.map((row) => row.join(",")).join("\r\n");
+  return rows.map((row) => row.map(escapeCsv).join(",")).join("\r\n");
 }
 
 function filterByDateRange<T extends { date?: string; createdAt?: string; startDate?: string; period?: string }>(
@@ -36,8 +38,9 @@ function filterByDateRange<T extends { date?: string; createdAt?: string; startD
 /** Employee IDs yang boleh dilihat oleh `actor`. */
 export function getReportScope(actor: { type: "employee"; employee: Employee } | { type: "admin" }): Set<string> | null {
   if (actor.type === "admin") return null;
-  const role = actor.employee.role;
-  if (ROLE_LEVEL[role] <= ROLE_LEVEL.direktur) return null;
+  // Owner, Direktur, dan Manager HR melihat seluruh perusahaan; manager lain
+  // hanya lingkup garis komandonya.
+  if (canViewAllEmployees(actor.employee)) return null;
   const ids = getSubordinateIds(actor.employee.id);
   ids.add(actor.employee.id);
   return ids;

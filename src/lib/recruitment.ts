@@ -1,22 +1,39 @@
 import "server-only";
 import { jobPostings, candidates, nextJobId, nextCandidateId } from "./db";
-import type { JobPosting, Candidate, EmploymentType, Department, CandidateStage } from "./types";
+import { todayISO } from "./date";
+import type {
+  JobPosting,
+  Candidate,
+  EmploymentType,
+  Department,
+  CandidateStage,
+  WorkArrangement,
+} from "./types";
 
-export function createJobPosting(
-  createdBy: string,
-  title: string,
-  department: Department,
-  employmentType: EmploymentType,
-  description: string,
-  requirements: string,
-): JobPosting {
+export interface CreateJobInput {
+  title: string;
+  department: Department;
+  employmentType: EmploymentType;
+  description: string;
+  requirements: string;
+  location?: string;
+  workArrangement?: WorkArrangement;
+  salaryRange?: string | null;
+  deadline?: string | null;
+}
+
+export function createJobPosting(createdBy: string, input: CreateJobInput): JobPosting {
   const posting: JobPosting = {
     id: nextJobId(),
-    title,
-    department,
-    employmentType,
-    description,
-    requirements,
+    title: input.title,
+    department: input.department,
+    employmentType: input.employmentType,
+    description: input.description,
+    requirements: input.requirements,
+    location: input.location ?? "Depok, Jawa Barat",
+    workArrangement: input.workArrangement ?? "onsite",
+    salaryRange: input.salaryRange ?? null,
+    deadline: input.deadline ?? null,
     status: "dibuka",
     createdBy,
     createdAt: new Date().toISOString(),
@@ -36,9 +53,16 @@ export function toggleJobStatus(jobId: string): ToggleJobStatusResult {
   return { ok: true, posting };
 }
 
+/** Lowongan yang benar-benar masih menerima lamaran (status + deadline). */
+export function isJobOpen(job: JobPosting): boolean {
+  if (job.status !== "dibuka") return false;
+  if (!job.deadline) return true;
+  return job.deadline >= todayISO();
+}
+
 export function getOpenJobPostings(): JobPosting[] {
   return jobPostings
-    .filter((j) => j.status === "dibuka")
+    .filter(isJobOpen)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
@@ -62,6 +86,7 @@ export function addCandidate(
   phone: string,
   resumeNote: string,
   resumeFile: string | null = null,
+  consentAt: string | null = null,
 ): AddCandidateResult {
   if (!findJobPostingById(jobPostingId)) return { ok: false, error: "job_not_found" };
 
@@ -73,6 +98,7 @@ export function addCandidate(
     phone,
     resumeNote,
     resumeFile,
+    consentAt,
     stage: "lamar",
     notes: "",
     appliedAt: new Date().toISOString(),
@@ -115,4 +141,14 @@ export function getCandidateCountsByJob(): Record<string, number> {
     counts[c.jobPostingId] = (counts[c.jobPostingId] ?? 0) + 1;
   }
   return counts;
+}
+
+export function findCandidateById(id: string): Candidate | undefined {
+  return candidates.find((c) => c.id === id);
+}
+
+/** Lowongan pemilik seorang kandidat — dipakai untuk cek scope departemen. */
+export function findJobPostingForCandidate(candidateId: string): JobPosting | undefined {
+  const candidate = findCandidateById(candidateId);
+  return candidate ? findJobPostingById(candidate.jobPostingId) : undefined;
 }

@@ -4,6 +4,21 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, TriangleAlert, Eye, EyeOff } from "lucide-react";
 
+/**
+ * Hanya izinkan path internal. Tanpa ini, `?next=https://example.com/phish`
+ * membawa user ke situs lain setelah login sukses (open redirect).
+ */
+function safeNextPath(raw: string | null): string {
+  if (!raw) return "/dashboard";
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) {
+    return "/dashboard";
+  }
+  if (raw === "/login" || raw.startsWith("/login?") || raw.startsWith("/login#")) {
+    return "/dashboard";
+  }
+  return raw;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,8 +47,7 @@ export function LoginForm() {
         return;
       }
 
-      const next = searchParams.get("next") ?? "/dashboard";
-      router.push(next);
+      router.push(safeNextPath(searchParams.get("next")));
       router.refresh();
     } catch {
       setError("Terjadi kesalahan jaringan. Coba lagi.");
@@ -45,7 +59,7 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       <div className="space-y-1.5">
         <label htmlFor="identifier" className="text-sm font-medium">
-          Email
+          Email atau username
         </label>
         <input
           id="identifier"
@@ -55,7 +69,7 @@ export function LoginForm() {
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
           className="w-full rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-          placeholder="nama@egalog.co.id"
+          placeholder="nama@egalog.co.id atau username admin"
         />
       </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { getHolidays } from "@/lib/holidays";
+import { todayISO } from "@/lib/date";
 
 export const metadata: Metadata = { title: "Kalender" };
 import { Card, PageHeader } from "@/components/card";
@@ -10,7 +11,7 @@ export default async function KalenderPage() {
   if (!employee) return null;
 
   const holidays = getHolidays();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
 
   const groupedByMonth: Record<string, typeof holidays> = {};
   for (const h of holidays) {

@@ -41,6 +41,12 @@ export function TeamScoreChart({ entries }: { entries: TeamScoreEntry[] }) {
         )}
       </div>
 
+      {scored.length === 0 ? (
+        <p className="rounded-[8px] border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          Belum ada review final untuk tim. Skor akan muncul di sini setelah
+          siklus review selesai.
+        </p>
+      ) : (
       <div
         role="img"
         aria-label={`Skor review terakhir tim: ${entries
@@ -79,6 +85,7 @@ export function TeamScoreChart({ entries }: { entries: TeamScoreEntry[] }) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

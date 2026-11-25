@@ -145,6 +145,17 @@ export function AddCandidateForm({ jobPostingId }: { jobPostingId: string }) {
               e.target.value = "";
               return;
             }
+            if (
+              ![
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              ].includes(file.type)
+            ) {
+              setFileError("Format file harus PDF, DOC, atau DOCX.");
+              e.target.value = "";
+              return;
+            }
             const reader = new FileReader();
             reader.onload = () => {
               setResumeFile(reader.result as string);

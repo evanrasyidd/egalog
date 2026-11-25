@@ -1,30 +1,18 @@
 import type { Metadata } from "next";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getCurrentEmployee } from "@/lib/current-employee";
 import { canManageRecruitment } from "@/lib/permissions";
 
 export const metadata: Metadata = { title: "Detail Lowongan" };
 import { findJobPostingById, getCandidatesForJob } from "@/lib/recruitment";
 import { DEPARTMENT_LABEL } from "@/lib/types";
+import { EMPLOYMENT_TYPE_LABEL, WORK_ARRANGEMENT_LABEL } from "@/lib/labels";
+import { formatDateID } from "@/lib/date";
 import { Card, PageHeader } from "@/components/card";
 import { StatusBadge } from "@/components/status-badge";
 import { BackLink } from "@/components/back-link";
 import { AddCandidateForm } from "@/components/add-candidate-form";
 import { CandidateStageEditor } from "@/components/candidate-stage-editor";
-
-const EMPLOYMENT_TYPE_LABEL: Record<string, string> = {
-  full_time: "Full-time",
-  kontrak: "Kontrak",
-  magang: "Magang",
-};
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export default async function JobPostingDetailPage({
   params,
@@ -38,8 +26,10 @@ export default async function JobPostingDetailPage({
   const posting = findJobPostingById(id);
   if (!posting) notFound();
 
-  const isManager = canManageRecruitment(employee);
-  const candidateList = isManager ? getCandidatesForJob(id) : [];
+  // Manager departemen lain tetap boleh melihat detail lowongan yang dibuka,
+  // tapi kandidat & aksi kelola hanya untuk departemen yang jadi scope-nya.
+  const canManage = canManageRecruitment(employee, posting.department);
+  const candidateList = canManage ? getCandidatesForJob(id) : [];
 
   return (
     <div>
@@ -47,24 +37,42 @@ export default async function JobPostingDetailPage({
 
       <PageHeader
         title={posting.title}
-        description={`${DEPARTMENT_LABEL[posting.department]} · ${EMPLOYMENT_TYPE_LABEL[posting.employmentType]}`}
+        description={`${DEPARTMENT_LABEL[posting.department]} · ${EMPLOYMENT_TYPE_LABEL[posting.employmentType]} · ${WORK_ARRANGEMENT_LABEL[posting.workArrangement]}`}
         action={<StatusBadge status={posting.status} />}
       />
 
       <Card className="mb-5">
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4 pb-4 border-b border-border">
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Lokasi</dt>
+            <dd>{posting.location}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Rentang Gaji</dt>
+            <dd>{posting.salaryRange ?? "Dirahasiakan"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Batas Lamaran</dt>
+            <dd>{posting.deadline ? formatDateID(posting.deadline) : "Tanpa batas"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Dipublikasikan</dt>
+            <dd>{formatDateID(posting.createdAt.slice(0, 10))}</dd>
+          </div>
+        </dl>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Deskripsi</p>
-            <p>{posting.description}</p>
+            <p className="whitespace-pre-line">{posting.description}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Kualifikasi</p>
-            <p>{posting.requirements}</p>
+            <p className="whitespace-pre-line">{posting.requirements}</p>
           </div>
         </div>
       </Card>
 
-      {isManager && (
+      {canManage && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium">Kandidat ({candidateList.length})</h2>
@@ -90,7 +98,7 @@ export default async function JobPostingDetailPage({
                       </p>
                     </div>
                     <span className="text-xs text-muted-foreground shrink-0">
-                      Lamar {formatDate(c.appliedAt)}
+                      Lamar {formatDateID(c.appliedAt.slice(0, 10))}
                     </span>
                   </div>
                   {c.resumeNote && (
@@ -98,10 +106,9 @@ export default async function JobPostingDetailPage({
                   )}
                   {c.resumeFile && (
                     <a
-                      href={c.resumeFile}
+                      href={`/api/rekrutmen/kandidat/${c.id}/cv`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      download={c.name.replace(/\s+/g, "_") + "_CV"}
                       className="inline-flex items-center gap-1.5 mb-3 rounded-[8px] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted transition-colors"
                     >
                       Unduh CV

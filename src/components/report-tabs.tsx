@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Download } from "lucide-react";
 import { Card } from "./card";
+import { todayISO } from "@/lib/date";
 
 type Tab = "karyawan" | "absensi" | "payroll" | "cuti";
 
@@ -37,51 +38,65 @@ const COL_LABELS: Record<string, string> = {
   latePenalty: "Denda Telat", alphaPenalty: "Denda Alpha", period: "Periode",
 };
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
+const SUMMARY_LABELS: Record<string, string> = {
+  total: "Total Baris",
+  active: "Aktif",
+  inactive: "Nonaktif",
+  totalNetPay: "Total Take Home",
+  totalBaseSalary: "Total Gaji Pokok",
+  periods: "Periode",
+};
 
 function firstOfMonth() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  return `${todayISO().slice(0, 7)}-01`;
 }
 
-export function ReportTabs() {
+export function ReportTabs({ canViewPayroll = true }: { canViewPayroll?: boolean }) {
+  const visibleTabs = canViewPayroll ? TABS : TABS.filter((t) => t.key !== "payroll");
   const [tab, setTab] = useState<Tab>("karyawan");
   const [dateFrom, setDateFrom] = useState(firstOfMonth);
   const [dateTo, setDateTo] = useState(todayISO);
   const [data, setData] = useState<Record<string, unknown>[] | null>(null);
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      let baseUrl = API_PATHS[tab];
-      const params = new URLSearchParams();
-      if (tab === "absensi" || tab === "payroll" || tab === "cuti") {
-        params.set("dateFrom", dateFrom);
-        params.set("dateTo", dateTo);
-      }
-      const url = `${baseUrl}${params.toString() ? "?" + params.toString() : ""}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Gagal mengambil data");
-      const json = await res.json();
-      setData(json.data);
-      const { data: _d, ...rest } = json;
-      setSummary(rest);
-    } catch {
-      setError("Gagal memuat data.");
-      setData(null);
-      setSummary(null);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (tab === "absensi" || tab === "payroll" || tab === "cuti") {
+      params.set("dateFrom", dateFrom);
+      params.set("dateTo", dateTo);
     }
-  }, [tab, dateFrom, dateTo]);
+    const url = `${API_PATHS[tab]}${params.toString() ? "?" + params.toString() : ""}`;
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal mengambil data");
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setData(json.data);
+        const summaryData: Record<string, unknown> = { ...json };
+        delete summaryData.data;
+        setSummary(summaryData);
+        setError(null);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError("Gagal memuat data.");
+        setData(null);
+        setSummary(null);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, dateFrom, dateTo, refreshKey]);
 
   function getCsvUrl(): string {
     switch (tab) {
@@ -101,7 +116,12 @@ export function ReportTabs() {
     const displayData = data.slice(0, 50);
 
     return (
-      <div className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded-[8px]">
+      <div
+        className="overflow-x-auto max-h-96 overflow-y-auto border border-border rounded-[8px]"
+        role="region"
+        aria-label={`Tabel preview ${TABS.find((t) => t.key === tab)?.label}`}
+        tabIndex={0}
+      >
         <table className="w-full text-xs" aria-label={`Preview data ${TABS.find((t) => t.key === tab)?.label}`}>
           <thead className="sticky top-0 bg-surface z-10">
             <tr className="text-left border-b border-border">
@@ -141,11 +161,15 @@ export function ReportTabs() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap gap-1 border-b border-border pb-1">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.key}
             type="button"
-            onClick={() => setTab(t.key)}
+            onClick={() => {
+              setLoading(true);
+              setTab(t.key);
+            }}
+            aria-pressed={tab === t.key}
             className={`px-4 py-2 text-sm font-medium rounded-[8px] transition-colors ${
               tab === t.key
                 ? "bg-primary text-primary-foreground"
@@ -164,7 +188,10 @@ export function ReportTabs() {
               <label htmlFor="dateFrom" className="text-xs font-medium mb-1 block text-muted-foreground">Dari Tanggal</label>
               <input
                 id="dateFrom" type="date" value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={(e) => {
+                  setLoading(true);
+                  setDateFrom(e.target.value);
+                }}
                 className="rounded-[8px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
@@ -172,13 +199,19 @@ export function ReportTabs() {
               <label htmlFor="dateTo" className="text-xs font-medium mb-1 block text-muted-foreground">Sampai Tanggal</label>
               <input
                 id="dateTo" type="date" value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={(e) => {
+                  setLoading(true);
+                  setDateTo(e.target.value);
+                }}
                 className="rounded-[8px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <button
               type="button"
-              onClick={fetchData}
+              onClick={() => {
+                setLoading(true);
+                setRefreshKey((key) => key + 1);
+              }}
               className="rounded-[8px] bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-soft transition-colors"
             >
               Tampilkan
@@ -191,7 +224,9 @@ export function ReportTabs() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Object.entries(summary).filter(([k]) => k !== "data" && k !== "periods").map(([key, val]) => (
             <Card key={key}>
-              <p className="text-xs text-muted-foreground mb-0.5 capitalize">{key}</p>
+              <p className="text-xs text-muted-foreground mb-0.5">
+                {SUMMARY_LABELS[key] ?? key}
+              </p>
               <p className="text-lg font-semibold font-mono">
                 {typeof val === "number" && CURRENCY_COLS.has(key)
                   ? formatCurrency(val)

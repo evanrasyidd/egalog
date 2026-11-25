@@ -1,18 +1,14 @@
 import "server-only";
 import { attendanceRecords, nextAttendanceId } from "./db";
+import { todayISO } from "./date";
 import { isWithinOfficeRadius } from "./geofence";
 import { getSystemSettings } from "./settings";
 import type { AttendanceRecord } from "./types";
 
 const TIMEZONE_OFFSET_HOURS = 7; // WIB (Asia/Jakarta)
 
-function todayDateString(): string {
-  const now = new Date(Date.now() + TIMEZONE_OFFSET_HOURS * 60 * 60 * 1000);
-  return now.toISOString().slice(0, 10);
-}
-
 export function getTodayRecord(employeeId: string): AttendanceRecord | undefined {
-  const today = todayDateString();
+  const today = todayISO();
   return attendanceRecords.find(
     (r) => r.employeeId === employeeId && r.date === today,
   );
@@ -48,7 +44,7 @@ export function clockIn(
   const record: AttendanceRecord = existing ?? {
     id: nextAttendanceId(),
     employeeId,
-    date: todayDateString(),
+    date: todayISO(),
     clockIn: null,
     clockOut: null,
     clockInLocation: null,

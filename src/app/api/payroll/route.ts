@@ -10,6 +10,7 @@ import {
   getPayslipsForPeriod,
   isValidPeriod,
 } from "@/lib/payroll";
+import { isPeriodClosed } from "@/lib/date";
 import { employees, findEmployeeById } from "@/lib/db";
 
 export async function GET(request: Request) {
@@ -96,7 +97,17 @@ export async function POST(request: Request) {
   const name = actor.type === "admin" ? actor.admin.name : actor.employee.name;
 
   if (parsed.data.mode === "all") {
-    const summary = generatePayslipsForAll(employees, parsed.data.period, generatedBy);
+    if (!isPeriodClosed(parsed.data.period)) {
+      return NextResponse.json(
+        {
+          error: "period_not_closed",
+          message:
+            "Payroll bulan berjalan belum bisa difinalkan. Pilih periode yang sudah selesai (bulan lalu atau lebih awal).",
+        },
+        { status: 422 },
+      );
+    }
+    const summary = generatePayslipsForAll(parsed.data.period, generatedBy);
     logActivity("payroll", name, role, `Generate payroll semua karyawan`, `Periode ${parsed.data.period}`);
     return NextResponse.json({ ok: true, summary });
   }
@@ -112,6 +123,14 @@ export async function POST(request: Request) {
       already_exists: "Slip gaji untuk karyawan & periode ini sudah pernah dibuat.",
       employee_not_found: "Karyawan tidak ditemukan.",
       invalid_period: "Format periode harus YYYY-MM.",
+      period_not_closed:
+        "Payroll bulan berjalan belum bisa difinalkan. Pilih periode yang sudah selesai.",
+      employee_inactive:
+        "Karyawan sudah nonaktif. Final payroll untuk karyawan resign diproses manual oleh Finance.",
+      attendance_missing:
+        "Data absensi periode ini belum tersedia untuk karyawan tersebut. Lengkapi absensi dulu sebelum generate payroll.",
+      not_eligible:
+        "Karyawan belum bergabung pada periode ini, atau periode tidak memiliki hari kerja.",
     };
     return NextResponse.json(
       { error: result.error, message: messages[result.error] },

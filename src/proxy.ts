@@ -8,9 +8,9 @@ const AUTH_PATHS = ["/login"];
 
 // /karir: halaman publik (careers page) — bisa diakses TANPA login, TAPI
 // beda dari /login, orang yang SUDAH login pun tetap boleh buka ini biasa
-// aja (misal HR mau preview halaman publiknya). Jadi tidak ada redirect-away
-// di sini sama sekali, cuma dikecualikan dari wajib-login.
-const PUBLIC_PATHS = ["/karir"];
+// aja (misal HR mau preview halaman publiknya). /privasi ikut publik karena
+// ditautkan dari formulir lamaran. Tidak ada redirect-away di sini.
+const PUBLIC_PATHS = ["/karir", "/privasi"];
 
 // Admin adalah akun sistem terpisah dari struktur karyawan, dengan nested
 // route (dan layout) sendiri di /admin/**. Employee tidak pernah masuk ke
@@ -61,6 +61,6 @@ export const config = {
   // /login (HTML) padahal yang diminta harusnya JSON/JS — bikin PWA gagal
   // ter-install dan robots.txt tidak terbaca crawler.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|manifest.webmanifest|sw.js|icons/|icon$|apple-icon$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|sw.js|icons/|fonts/|icon$|apple-icon$|.*\\.(?:png|jpg|jpeg|webp|svg)$).*)",
   ],
 };

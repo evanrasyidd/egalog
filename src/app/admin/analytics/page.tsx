@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { employees, attendanceRecords, leaveRequests, payslips } from "@/lib/db";
 import { Card, PageHeader } from "@/components/card";
 import { DEPARTMENT_LABEL } from "@/lib/types";
+import { currentPeriod, previousPeriod, todayISO } from "@/lib/date";
 
 export const metadata: Metadata = { title: "Admin • Analitik" };
 import { formatCurrency } from "@/lib/format";
@@ -11,15 +12,18 @@ export default async function AdminAnalyticsPage() {
   const totalEmployees = activeEmployees.length;
   const totalDepartments = new Set(activeEmployees.map((e) => e.department)).size;
 
-  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonth = currentPeriod();
   const monthRecords = attendanceRecords.filter((r) => r.date.startsWith(thisMonth));
-  const presentToday = attendanceRecords.filter((r) => r.date === new Date().toISOString().slice(0, 10) && r.clockIn).length;
+  const presentToday = attendanceRecords.filter((r) => r.date === todayISO() && r.clockIn).length;
   const lateThisMonth = monthRecords.filter((r) => r.status === "terlambat").length;
   const alphaThisMonth = monthRecords.filter((r) => r.status === "alpha").length;
 
   const pendingLeaves = leaveRequests.filter((r) => r.status === "menunggu").length;
+  // Bulan berjalan belum ditutup, jadi angka payroll yang bermakna adalah
+  // periode terakhir yang sudah selesai.
+  const payrollPeriod = previousPeriod(thisMonth);
   const monthlyPayrollTotal = payslips
-    .filter((p) => p.period === thisMonth)
+    .filter((p) => p.period === payrollPeriod)
     .reduce((sum, p) => sum + p.netPay, 0);
 
   const deptCounts: Record<string, number> = {};
@@ -33,7 +37,10 @@ export default async function AdminAnalyticsPage() {
     roleCounts[label] = (roleCounts[label] ?? 0) + 1;
   }
 
-  const recentPayrolls = [...payslips].sort((a, b) => b.period.localeCompare(a.period)).slice(0, 5);
+  const recentPayrolls = payslips
+    .filter((p) => p.period === payrollPeriod)
+    .sort((a, b) => b.period.localeCompare(a.period))
+    .slice(0, 5);
 
   return (
     <div>
@@ -132,12 +139,12 @@ export default async function AdminAnalyticsPage() {
         </Card>
 
         <Card>
-          <h2 className="text-sm font-medium mb-4">Payroll Bulan Ini</h2>
+          <h2 className="text-sm font-medium mb-4">Payroll {payrollPeriod}</h2>
           {monthlyPayrollTotal > 0 ? (
             <>
               <p className="text-xs text-muted-foreground mb-1">Total Take Home Pay</p>
               <p className="text-2xl font-semibold font-mono">{formatCurrency(monthlyPayrollTotal)}</p>
-              <p className="text-xs text-muted-foreground mt-2 capitalize">{thisMonth}</p>
+              <p className="text-xs text-muted-foreground mt-2">Periode terakhir yang sudah ditutup</p>
               <div className="mt-4 space-y-2">
                 {recentPayrolls.map((p) => {
                   const emp = employees.find((e) => e.id === p.employeeId);

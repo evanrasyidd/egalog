@@ -1,5 +1,6 @@
 import "server-only";
 import { holidays, isHoliday, getHolidayName, getWorkingDaysInPeriod } from "./db";
+import { todayISO } from "./date";
 import type { Holiday } from "./types";
 
 export function getHolidays(): Holiday[] {
@@ -11,7 +12,7 @@ export function getHolidaysInRange(start: string, end: string): Holiday[] {
 }
 
 export function getUpcomingHolidays(limit = 5): Holiday[] {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayISO();
   return holidays
     .filter((h) => h.date >= today)
     .sort((a, b) => a.date.localeCompare(b.date))

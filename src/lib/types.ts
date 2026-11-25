@@ -212,6 +212,7 @@ export interface Goal {
 
 export type EmploymentType = "full_time" | "kontrak" | "magang";
 export type JobStatus = "dibuka" | "ditutup";
+export type WorkArrangement = "onsite" | "hybrid" | "remote";
 
 export interface JobPosting {
   id: string;
@@ -220,6 +221,10 @@ export interface JobPosting {
   employmentType: EmploymentType;
   description: string;
   requirements: string;
+  location: string;
+  workArrangement: WorkArrangement;
+  salaryRange: string | null;
+  deadline: string | null; // YYYY-MM-DD, null = tanpa batas
   status: JobStatus;
   createdBy: string;
   createdAt: string;
@@ -235,6 +240,7 @@ export interface Candidate {
   phone: string;
   resumeNote: string; // ringkasan CV/pengalaman, input teks manual oleh HR
   resumeFile: string | null; // data URL file CV (pdf/doc) yg diupload pelamar
+  consentAt: string | null; // waktu persetujuan pemrosesan data (lamaran publik)
   stage: CandidateStage;
   notes: string;
   appliedAt: string;

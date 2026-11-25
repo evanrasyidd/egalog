@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentActor, actorHasPermission, actorId } from "@/lib/current-actor";
-import { canManageRecruitment } from "@/lib/permissions";
-import { updateCandidateStage } from "@/lib/recruitment";
+import {
+  actorCanManageRecruitment,
+  getCurrentActor,
+  actorId,
+} from "@/lib/current-actor";
+import {
+  findJobPostingForCandidate,
+  updateCandidateStage,
+} from "@/lib/recruitment";
 
 const bodySchema = z.object({
   stage: z.enum(["lamar", "interview", "offer", "diterima", "ditolak"]),
@@ -17,11 +23,26 @@ export async function PATCH(
   if (!actor) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!actorHasPermission(actor, canManageRecruitment)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
 
   const { id } = await params;
+  const job = findJobPostingForCandidate(id);
+  if (!job) {
+    return NextResponse.json(
+      { error: "not_found", message: "Kandidat tidak ditemukan." },
+      { status: 404 },
+    );
+  }
+
+  if (!actorCanManageRecruitment(actor, job.department)) {
+    return NextResponse.json(
+      {
+        error: "forbidden",
+        message: "Kamu hanya bisa mengelola kandidat untuk departemenmu sendiri.",
+      },
+      { status: 403 },
+    );
+  }
+
   const json = await request.json().catch(() => null);
   const parsed = bodySchema.safeParse(json);
   if (!parsed.success) {

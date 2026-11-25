@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Bell } from "lucide-react";
 import { LogoutButton } from "./logout-button";
 import { Avatar } from "./avatar";
 import { GlobalSearch } from "./global-search";

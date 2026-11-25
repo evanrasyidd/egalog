@@ -15,14 +15,22 @@ Modul yang sudah jalan:
   Supervisor ke atas lengkap dengan foto.
 - **Cuti & Izin** — pengajuan dengan approval berjenjang otomatis
   (Staff → Supervisor → Manager, atau Staff → Manager untuk departemen tanpa
-  Supervisor), saldo cuti tahunan otomatis terpotong saat disetujui.
+  Supervisor), saldo cuti tahunan otomatis terpotong saat disetujui. Cuti
+  dihitung dalam **hari kerja**: Sabtu, Minggu, dan hari libur tidak memotong
+  saldo. Pengajuan yang overlap dengan cuti/izin aktif lain ditolak, dan saldo
+  (termasuk pengajuan yang masih menunggu) divalidasi sebelum approval.
 - **Payroll** — generate slip gaji bulanan otomatis dari data Absensi & Cuti:
   tunjangan transport/makan dihitung per hari hadir aktual, lembur dihitung
   dari selisih jam pulang−masuk, potongan alpha silang-cek ke cuti yang
-  disetujui (hari libur karena cuti tidak dianggap alpha). Slip bisa diunduh
-  sebagai PDF asli (bukan cetak browser) via `@react-pdf/renderer`. Akses
-  generate/lihat-semua dibatasi untuk Manager Finance, Direktur, dan Owner;
-  karyawan lain cuma bisa lihat & unduh slip miliknya sendiri.
+  disetujui (hari libur karena cuti tidak dianggap alpha). Payroll hanya bisa
+  difinalkan untuk **periode yang sudah selesai** (bulan berjalan tidak
+  dihitung alpha sampai akhir bulan), hanya untuk karyawan aktif, dan gaji
+  pokok/tunjangan jabatan diprorata untuk karyawan yang bergabung di tengah
+  periode. Potongan tidak bisa membuat take home pay negatif. Kalender hari
+  libur dipakai saat menghitung hari kerja. Slip bisa diunduh sebagai PDF asli
+  (bukan cetak browser) via `@react-pdf/renderer`. Akses generate/lihat-semua
+  dibatasi untuk Manager Finance, Direktur, dan Owner; karyawan lain cuma bisa
+  lihat & unduh slip miliknya sendiri.
 - **Struktur Organisasi** — org chart penuh, semua role bisa lihat.
 - **Direktori Karyawan** — khusus Manager ke atas, visibility dibatasi sesuai
   garis komando (Manager cuma lihat tim-nya, Owner/Direktur/HR Manager lihat
@@ -59,17 +67,24 @@ Modul yang sudah jalan:
   atasan, progress-nya bisa diupdate karyawan sendiri.
 - **Rekrutmen** — internal job board (semua karyawan bisa lihat lowongan
   yang dibuka) + pipeline kandidat Lamar → Interview → Offer → Diterima/
-  Ditolak untuk HR Manager, Direktur, dan Owner. Kandidat bisa masuk lewat
-  2 jalur: diinput manual oleh HR, ATAU melamar sendiri lewat halaman karir
-  publik (lihat di bawah) — dua-duanya masuk ke pipeline yang sama.
+  Ditolak. Scope kelola mengikuti departemen: Owner & Direktur boleh semua
+  departemen, Manager HR hanya departemennya sendiri (HR & GA), manager
+  departemen lain read-only. Scope ini ditegakkan di halaman **dan** API,
+  termasuk akses unduh CV. Kandidat bisa masuk lewat 2 jalur: diinput manual
+  oleh HR, ATAU melamar sendiri lewat halaman karir publik (lihat di bawah) —
+  dua-duanya masuk ke pipeline yang sama.
 - **Karir** (`/karir`, publik, tanpa login) — landing page + company
   profile + daftar lowongan terbuka + halaman detail per lowongan dengan
   form lamar sendiri. Ini SATU-SATUNYA bagian dari aplikasi yang publik
-  (semua route lain wajib login) — dikecualikan secara eksplisit dari
-  proteksi auth di `proxy.ts` dan dari `robots.ts` (boleh di-index Google,
-  beda dengan sisa app yang di-block dari crawler). Form lamar dilindungi
-  honeypot field (dicek di client MAUPUN server, bukan cuma client-side
-  yang gampang di-bypass) + rate limit 5 lamaran/jam per IP.
+  bersama `/privasi` (semua route lain wajib login) — dikecualikan secara
+  eksplisit dari proteksi auth di `proxy.ts` dan dari `robots.ts` (boleh
+  di-index Google, beda dengan sisa app yang di-block dari crawler). Tersedia
+  metadata per lowongan, canonical, Open Graph, JSON-LD `JobPosting`, dan
+  `sitemap.xml`. Form lamar meminta persetujuan pemrosesan data (disimpan
+  sebagai `consentAt`), menerima CV PDF/DOC/DOCX yang divalidasi MIME +
+  magic bytes di server, dilindungi honeypot + rate limit 5 lamaran/jam per
+  IP. CV tidak pernah disajikan sebagai data URL publik; unduhan lewat
+  endpoint ber-sesi yang mengecek scope departemen.
 - **Profile** — setiap karyawan bisa lihat info akun sendiri, **upload foto
   profil** (auto center-crop ke persegi 192×192, kompresi WebP/JPEG di
   client sebelum dikirim), ganti warna avatar sebagai fallback kalau tidak
@@ -189,11 +204,10 @@ independen dari soal in-memory store di atas):
 - Halaman publik `/karir` pakai **ISR** (`revalidate = 60`) — di-generate
   statis, cuma di-refresh tiap 60 detik, bukan render ulang tiap request.
   Ini paling kepakai kalau halaman ini viral/di-crawl banyak bot.
-- Semua icon PWA (`/icons/**`, favicon) dikasih
-  `Cache-Control: public, max-age=31536000, immutable` — tanpa ini, tiap
-  kali browser minta favicon/icon, Function-nya jalan lagi generate ulang
-  gambar yang sama persis lewat Satori (buang-buang Active CPU & Function
-  Invocation untuk sesuatu yang gak pernah berubah).
+- Icon PWA, favicon, dan apple-touch-icon adalah file statis
+  (`public/icons/*.png`, `src/app/icon.png`, `src/app/apple-icon.png`), bukan
+  route Satori yang generate gambar tiap request. Tidak ada Active CPU yang
+  terbuang untuk gambar yang tidak pernah berubah.
 - Foto (selfie & avatar) sudah di-downscale + dikompres WebP di **client**
   sebelum dikirim (lihat bagian "Absensi, geofencing & selfie" di bawah) —
   jadi ukuran payload yang keluar-masuk sudah minimal dari awal, bukan baru
@@ -293,6 +307,20 @@ ini) — lihat komentar di `public/sw.js` untuk detail alasannya.
 benar (ini gap yang belum di-fix Next.js per versi 16.2.10 — lihat komentar
 di `src/app/layout.tsx`). Tag lama ditambahkan manual, aman coexist dengan
 yang baru.
+
+## Identitas visual
+
+- Logo, wordmark, dan app icon ada di `public/brand/` (`egalog-logo.svg`,
+  `egalog-logo-reversed.svg`, `egalog-mark.svg`, `egalog-app-icon.svg`).
+  Komponen React-nya di `src/components/brand.tsx`, dipakai di sidebar,
+  login, dan halaman karir publik.
+- Favicon & icon PWA: `src/app/icon.png`, `src/app/apple-icon.png`, dan
+  `public/icons/{192,512,512-maskable}.png`.
+- Palet: Navy `#1F2A44`, Terracotta `#A8531F`, Terracotta muda `#E8A06D`,
+  Krem `#F4F2ED`.
+- Tipografi: **Archivo** untuk judul, **Public Sans** untuk teks UI. Dua-duanya
+  di-host sendiri di `public/fonts/` karena CSP `font-src 'self'` memblokir
+  Google Fonts. File-nya variable font, jadi satu file per family cukup.
 
 ## Ekosistem EgaLog
 

@@ -8,6 +8,8 @@ import { Card, PageHeader } from "@/components/card";
 import { ROLE_LEVEL, DEPARTMENT_LABEL } from "@/lib/types";
 import { formatCurrency } from "@/lib/format";
 import { getSubordinateIds } from "@/lib/db";
+import { canManagePayroll } from "@/lib/permissions";
+import { currentPeriod, previousPeriod, todayISO } from "@/lib/date";
 import { ReportTabs } from "@/components/report-tabs";
 
 export default async function AnalyticsPage() {
@@ -24,15 +26,17 @@ export default async function AnalyticsPage() {
   const totalEmployees = scope.length;
   const totalDepartments = new Set(scope.map((e) => e.department)).size;
 
-  const thisMonth = new Date().toISOString().slice(0, 7);
+  const thisMonth = currentPeriod();
+  const payrollPeriod = previousPeriod(thisMonth); // bulan berjalan belum ditutup
+  const canViewPayroll = canManagePayroll(employee);
   const monthRecords = attendanceRecords.filter((r) => r.date.startsWith(thisMonth));
-  const presentToday = attendanceRecords.filter((r) => r.date === new Date().toISOString().slice(0, 10) && r.clockIn).length;
+  const presentToday = attendanceRecords.filter((r) => r.date === todayISO() && r.clockIn).length;
   const lateThisMonth = monthRecords.filter((r) => r.status === "terlambat").length;
   const alphaThisMonth = monthRecords.filter((r) => r.status === "alpha").length;
 
   const pendingLeaves = leaveRequests.filter((r) => r.status === "menunggu").length;
   const monthlyPayrollTotal = payslips
-    .filter((p) => p.period === thisMonth)
+    .filter((p) => p.period === payrollPeriod)
     .reduce((sum, p) => sum + p.netPay, 0);
 
   const deptCounts: Record<string, number> = {};
@@ -46,7 +50,10 @@ export default async function AnalyticsPage() {
     roleCounts[label] = (roleCounts[label] ?? 0) + 1;
   }
 
-  const recentPayrolls = [...payslips].sort((a, b) => b.period.localeCompare(a.period)).slice(0, 5);
+  const recentPayrolls = payslips
+    .filter((p) => p.period === payrollPeriod)
+    .sort((a, b) => b.period.localeCompare(a.period))
+    .slice(0, 5);
 
   return (
     <div>
@@ -144,36 +151,40 @@ export default async function AnalyticsPage() {
           </div>
         </Card>
 
-        <Card>
-          <h2 className="text-sm font-medium mb-4">Payroll Bulan Ini</h2>
-          {monthlyPayrollTotal > 0 ? (
-            <>
-              <p className="text-xs text-muted-foreground mb-1">Total Take Home Pay</p>
-              <p className="text-2xl font-semibold font-mono">{formatCurrency(monthlyPayrollTotal)}</p>
-              <p className="text-xs text-muted-foreground mt-2 capitalize">{thisMonth}</p>
+        {canViewPayroll && (
+          <Card>
+            <h2 className="text-sm font-medium mb-4">Payroll {payrollPeriod}</h2>
+            {monthlyPayrollTotal > 0 ? (
+              <>
+                <p className="text-xs text-muted-foreground mb-1">Total Take Home Pay</p>
+                <p className="text-2xl font-semibold font-mono">{formatCurrency(monthlyPayrollTotal)}</p>
+                <p className="text-xs text-muted-foreground mt-2">Periode terakhir yang sudah ditutup</p>
 
-              <div className="mt-4 space-y-2">
-                {recentPayrolls.map((p) => {
-                  const emp = employees.find((e) => e.id === p.employeeId);
-                  return (
-                    <div key={p.id} className="flex justify-between text-sm">
-                      <span className="text-muted-foreground truncate">{emp?.name ?? p.employeeId}</span>
-                      <span className="font-mono font-medium">{formatCurrency(p.netPay)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">Belum ada payroll bulan ini.</p>
-          )}
-        </Card>
+                <div className="mt-4 space-y-2">
+                  {recentPayrolls.map((p) => {
+                    const emp = employees.find((e) => e.id === p.employeeId);
+                    return (
+                      <div key={p.id} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground truncate">{emp?.name ?? p.employeeId}</span>
+                        <span className="font-mono font-medium">{formatCurrency(p.netPay)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                Belum ada payroll untuk periode {payrollPeriod}.
+              </p>
+            )}
+          </Card>
+        )}
       </div>
 
       <Card className="mt-5">
         <h2 className="text-sm font-medium mb-4">Laporan & Ekspor</h2>
         <p className="text-xs text-muted-foreground mb-4">Preview data, filter tanggal dari kalender, lalu download CSV.</p>
-        <ReportTabs />
+        <ReportTabs canViewPayroll={canViewPayroll} />
       </Card>
     </div>
   );

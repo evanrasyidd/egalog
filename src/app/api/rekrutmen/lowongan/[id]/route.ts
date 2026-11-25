@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { getCurrentActor, actorHasPermission } from "@/lib/current-actor";
-import { canManageRecruitment } from "@/lib/permissions";
-import { toggleJobStatus } from "@/lib/recruitment";
+import {
+  actorCanManageRecruitment,
+  getCurrentActor,
+} from "@/lib/current-actor";
+import { findJobPostingById, toggleJobStatus } from "@/lib/recruitment";
 
 export async function PATCH(
   _request: Request,
@@ -11,11 +13,23 @@ export async function PATCH(
   if (!actor) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  if (!actorHasPermission(actor, canManageRecruitment)) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
 
   const { id } = await params;
+  const job = findJobPostingById(id);
+  if (!job) {
+    return NextResponse.json({ error: "not_found", message: "Lowongan tidak ditemukan." }, { status: 404 });
+  }
+
+  if (!actorCanManageRecruitment(actor, job.department)) {
+    return NextResponse.json(
+      {
+        error: "forbidden",
+        message: "Kamu hanya bisa mengelola lowongan departemenmu sendiri.",
+      },
+      { status: 403 },
+    );
+  }
+
   const result = toggleJobStatus(id);
   if (!result.ok) {
     return NextResponse.json({ error: "not_found", message: "Lowongan tidak ditemukan." }, { status: 404 });

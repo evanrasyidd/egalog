@@ -18,7 +18,7 @@ Profile (lihat CHANGELOG di bawah).
 | `/karyawan` (lihat direktori) | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
 | `/karyawan/baru` & `/karyawan/[id]` (kelola) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `/rekrutmen` (read-only utk non-manager) | ✅ | ✅ | ✅* | ✅* | ✅ | ✅* | ✅* | ❌ |
-| `/rekrutmen/[id]` (kelola kandidat) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `/rekrutmen/[id]` (kelola kandidat) | ✅ semua dept | ✅ semua dept | ❌ | ❌ | ✅ dept HR saja | ❌ | ❌ | ✅ |
 | `/admin/karyawan`, `/admin/karyawan/baru`, `/admin/karyawan/[id]` | ❌ (bukan rute Employee) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `/admin/payroll` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `/admin/rekrutmen`, `/admin/rekrutmen/[id]` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -39,13 +39,13 @@ punya akses yang sama untuk hal-hal generik (payroll/rekrutmen mereka tetap
 2. **Performance Review**: hanya **atasan langsung** (bukan siapapun di
    garis komando) yang bisa mengisi/submit review seorang karyawan. Draft
    tidak terlihat oleh karyawan sampai di-submit final.
-3. **Rekrutmen**: hanya Owner, Direktur, dan Manager HR & GA yang bisa
-   kelola lowongan & lihat data kandidat (nama, email, no HP — data pribadi
-   sensitif). Karyawan lain hanya lihat lowongan yang dibuka (job board
-   internal read-only), tanpa data kandidat sama sekali.
+3. **Rekrutmen**: Owner & Direktur boleh kelola semua departemen; Manager HR
+   & GA hanya boleh kelola lowongan/kandidat departemennya sendiri. Manager
+   departemen lain hanya lihat job board read-only. Scope departemen dicek di
+   halaman dan API (termasuk unduh CV). Karyawan lain tanpa data kandidat.
 4. **Direktori Karyawan** (`/karyawan`): visibility berjenjang — Manager
-   hanya lihat sub-tree timnya, Owner/Direktur lihat semua. Data gaji TIDAK
-   PERNAH ditampilkan di halaman ini (hanya di modul Payroll).
+   hanya lihat sub-tree timnya, Owner/Direktur/Manager HR lihat semua. Data
+   gaji TIDAK PERNAH ditampilkan di halaman ini (hanya di modul Payroll).
 5. **Cuti**: approval harus sesuai giliran di approval chain (tidak bisa
    di-skip atau didahulukan oleh atasan yang lebih tinggi).
 6. **Goal/KPI**: status hanya bisa diubah oleh pemilik goal sendiri ATAU
@@ -81,6 +81,45 @@ batas percobaan.
 **Fix:** Ditambahkan rate limit yang sama (5 percobaan/15 menit per
 `employeeId`) di `src/lib/profile.ts`, konsisten dengan pola di
 `src/lib/auth.ts`.
+
+## Perbaikan lanjutan (25 Nov 2026)
+
+Audit UI/UX, akses, dan logika menemukan beberapa regresi yang sudah
+diperbaiki dan diverifikasi ulang lewat build produksi + Playwright/axe:
+
+- **Rekrutmen**: Owner/Direktur bisa kelola semua departemen, Manager HR
+  hanya departemennya; Manager lain read-only. Dicek di halaman & API
+  (`canManageRecruitment`, `actorCanManageRecruitment`).
+- **Payroll**: hanya periode yang sudah selesai; hari libur & hari kerja
+  diperhitungkan; karyawan nonaktif dilewati; prorata tanggal bergabung;
+  take home pay tidak bisa negatif; bulk generate pakai konfirmasi.
+- **Laporan payroll**: hanya Owner/Direktur/Manager Finance (dan Admin);
+  tab report disembunyikan untuk role lain. CSV di-escape untuk mencegah
+  CSV injection.
+- **Cuti**: dihitung hari kerja (bukan hari kalender), overlap ditolak,
+  saldo dicek ulang saat approval terakhir.
+- **Login**: parameter `next` dibatasi ke path internal (open redirect
+  ditutup), label "Email atau username", `<main>` + `h1` terlihat di mobile.
+- **Pencarian global**: hasil dibatasi ke karyawan yang boleh dilihat;
+  staff tidak lagi bisa membaca seluruh direktori lewat search.
+- **Halaman karir**: `index, follow` (sebelumnya root noindex menular),
+  canonical, Open Graph, `sitemap.xml`, JSON-LD `JobPosting` (di-escape),
+  form lamar dengan consent + validasi MIME/magic bytes CV, dan unduhan CV
+  lewat endpoint bersesi yang mengecek scope departemen.
+- **UI/a11y**: font brand di-host sendiri (Archivo/Public Sans; CSP
+  `font-src 'self'` tidak memblokirnya), `Permissions-Policy` mengizinkan
+  kamera/geolokasi origin sendiri untuk absensi, skip link, kontras WCAG AA,
+  label link/ikon, tabel mobile, dan dashboard yang tidak lagi menyisakan
+  kartu kosong.
+- **Rebrand & halaman karir baru**: logo E, wordmark, app icon, favicon, dan
+  OG image diganti mengikuti identitas navy/terracotta/krem. Landing
+  `/karir` dan detail lowongan memakai layout company-profile baru
+  (hero watermark, kartu posisi, fact sheet, fasilitas, alur seleksi),
+  dengan Archivo untuk judul dan Public Sans untuk teks UI.
+
+Build produksi (`npm run build`) dan lint (0 error) lolos; axe tidak
+menemukan violation di `/karir`, detail lowongan, `/login`, `/privasi`,
+dashboard, direktori karyawan, payroll manager, dan halaman admin utama.
 
 ## Batasan yang disengaja (bukan bug)
 

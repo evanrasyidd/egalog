@@ -15,6 +15,7 @@ import { AttendanceWidget } from "@/components/attendance-widget";
 import { Card, PageHeader } from "@/components/card";
 import { TeamScoreChart } from "@/components/team-score-chart";
 import { formatCurrency, formatPeriodLabel, formatCycleLabel } from "@/lib/format";
+import { formatDateID, todayISO } from "@/lib/date";
 
 export default async function DashboardPage() {
   const employee = await getCurrentEmployee();
@@ -38,16 +39,50 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 mb-5 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+        <span>EGALOG/HR/{employee.nip}</span>
+        <span>
+          {formatDateID(todayISO(), {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+
       <PageHeader
         title={`Halo, ${employee.name.split(" ")[0]}`}
         description={`${ROLE_LABEL[employee.role]} · ${employee.jobTitle}`}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card className="lg:col-span-2">
-          <h2 className="text-sm font-medium mb-4">Absensi Hari Ini</h2>
-          <AttendanceWidget initialRecord={todayRecord} officeLabel={getOfficeLocation().label} />
-        </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <div className="lg:col-span-2 space-y-5">
+          <Card>
+            <h2 className="text-sm font-medium mb-4">Absensi Hari Ini</h2>
+            <AttendanceWidget initialRecord={todayRecord} officeLabel={getOfficeLocation().label} />
+          </Card>
+
+          {manageableTeam.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <TrendingUp className="h-4 w-4" strokeWidth={1.75} />
+                  <p className="text-xs font-medium">
+                    Skor Review Terakhir Tim{manageableTeam.length > 8 ? " (8 terendah)" : ""}
+                  </p>
+                </div>
+                <Link
+                  href="/performance/kelola"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  Kelola semua <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </Link>
+              </div>
+              <TeamScoreChart entries={teamScoreEntries} />
+            </Card>
+          )}
+        </div>
 
         <div className="space-y-5">
           <Card>
@@ -153,26 +188,6 @@ export default async function DashboardPage() {
           ) : null}
         </div>
       </div>
-
-      {manageableTeam.length > 0 && (
-        <Card className="mt-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <TrendingUp className="h-4 w-4" strokeWidth={1.75} />
-              <p className="text-xs font-medium">
-                Skor Review Terakhir Tim{manageableTeam.length > 8 ? " (8 terendah)" : ""}
-              </p>
-            </div>
-            <Link
-              href="/performance/kelola"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              Kelola semua <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} />
-            </Link>
-          </div>
-          <TeamScoreChart entries={teamScoreEntries} />
-        </Card>
-      )}
     </div>
   );
 }

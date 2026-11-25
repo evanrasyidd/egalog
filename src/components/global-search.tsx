@@ -19,11 +19,7 @@ export function GlobalSearch() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
+    if (!query.trim()) return;
     const timer = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(query)}`)
         .then((r) => r.json())
@@ -61,8 +57,15 @@ export function GlobalSearch() {
           placeholder="Cari karyawan..."
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
+            const value = e.target.value;
+            setQuery(value);
             setIsOpen(true);
+            if (value.trim()) {
+              setLoading(true);
+            } else {
+              setResults([]);
+              setLoading(false);
+            }
           }}
           onFocus={() => setIsOpen(true)}
           className="h-9 w-56 lg:w-72 rounded-[8px] border border-border bg-surface px-9 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"

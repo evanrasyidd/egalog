@@ -1,19 +1,61 @@
 import "server-only";
-import { leaveRequests, findEmployeeById, nextLeaveId } from "./db";
+import { leaveRequests, holidays, findEmployeeById, nextLeaveId } from "./db";
+import { countWorkingDaysInRange } from "./date";
 import { buildApprovalChain, isCurrentApprover } from "./permissions";
 import { createNotification } from "./notifications";
 import type { LeaveRequest, LeaveType } from "./types";
 
-function countLeaveDays(startDate: string, endDate: string): number {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffMs = end.getTime() - start.getTime();
-  return Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1);
+/**
+ * Cuti dihitung dalam HARI KERJA: Sabtu, Minggu, dan hari libur tidak
+ * memotong saldo. Ini konsisten dengan perhitungan payroll yang juga memakai
+ * kalender hari kerja.
+ */
+export function countLeaveDays(startDate: string, endDate: string): number {
+  return countWorkingDaysInRange(
+    startDate,
+    endDate,
+    holidays.map((h) => h.date),
+  );
+}
+
+function hasOverlappingRequest(
+  employeeId: string,
+  startDate: string,
+  endDate: string,
+  excludeId?: string,
+): boolean {
+  return leaveRequests.some(
+    (r) =>
+      r.id !== excludeId &&
+      r.employeeId === employeeId &&
+      r.status !== "ditolak" &&
+      r.startDate <= endDate &&
+      r.endDate >= startDate,
+  );
+}
+
+function pendingAnnualLeaveDays(employeeId: string): number {
+  return leaveRequests
+    .filter(
+      (r) =>
+        r.employeeId === employeeId &&
+        r.type === "cuti_tahunan" &&
+        r.status === "menunggu",
+    )
+    .reduce((total, r) => total + countLeaveDays(r.startDate, r.endDate), 0);
 }
 
 export type CreateLeaveResult =
   | { ok: true; request: LeaveRequest }
-  | { ok: false; error: "insufficient_balance" | "invalid_date_range" | "employee_not_found" };
+  | {
+      ok: false;
+      error:
+        | "insufficient_balance"
+        | "invalid_date_range"
+        | "employee_not_found"
+        | "overlapping_request"
+        | "no_working_days";
+    };
 
 export function createLeaveRequest(
   employeeId: string,
@@ -29,9 +71,20 @@ export function createLeaveRequest(
     return { ok: false, error: "invalid_date_range" };
   }
 
+  if (hasOverlappingRequest(employeeId, startDate, endDate)) {
+    return { ok: false, error: "overlapping_request" };
+  }
+
   const days = countLeaveDays(startDate, endDate);
-  if (type === "cuti_tahunan" && days > employee.leaveBalance) {
-    return { ok: false, error: "insufficient_balance" };
+  if (days === 0) return { ok: false, error: "no_working_days" };
+
+  if (type === "cuti_tahunan") {
+    // Saldo sudah dipotong saat approval, jadi yang perlu dicek di sini adalah
+    // saldo tersisa + pengajuan tahunan lain yang masih menunggu.
+    const reserved = pendingAnnualLeaveDays(employeeId);
+    if (days + reserved > employee.leaveBalance) {
+      return { ok: false, error: "insufficient_balance" };
+    }
   }
 
   const approvalChain = buildApprovalChain(employee);
@@ -72,7 +125,14 @@ export function createLeaveRequest(
 
 export type DecideLeaveResult =
   | { ok: true; request: LeaveRequest }
-  | { ok: false; error: "not_found" | "not_your_turn" | "already_decided" };
+  | {
+      ok: false;
+      error:
+        | "not_found"
+        | "not_your_turn"
+        | "already_decided"
+        | "insufficient_balance";
+    };
 
 export function decideLeaveRequest(
   leaveId: string,
@@ -91,13 +151,26 @@ export function decideLeaveRequest(
     return { ok: false, error: "not_your_turn" };
   }
 
+  const requester = findEmployeeById(request.employeeId);
+  const isLastStep = request.currentStepIndex === request.approvalChain.length - 1;
+  const days = countLeaveDays(request.startDate, request.endDate);
+
+  // Cek saldo SEBELUM mengubah keputusan. Kalau saldo sudah habis karena
+  // pengajuan lain, approval harus ditolak dengan pesan yang jelas.
+  if (
+    decision === "disetujui" &&
+    isLastStep &&
+    request.type === "cuti_tahunan" &&
+    requester &&
+    requester.leaveBalance < days
+  ) {
+    return { ok: false, error: "insufficient_balance" };
+  }
+
   const step = request.approvalChain[request.currentStepIndex];
   step.decision = decision;
   step.decidedAt = new Date().toISOString();
   step.comment = comment;
-
-  const requester = findEmployeeById(request.employeeId);
-  const approver = findEmployeeById(approverId);
 
   if (decision === "ditolak") {
     request.status = "ditolak";
@@ -113,13 +186,10 @@ export function decideLeaveRequest(
     return { ok: true, request };
   }
 
-  const isLastStep = request.currentStepIndex === request.approvalChain.length - 1;
   if (isLastStep) {
     request.status = "disetujui";
-    const employee = findEmployeeById(request.employeeId);
-    if (employee && request.type === "cuti_tahunan") {
-      const days = countLeaveDays(request.startDate, request.endDate);
-      employee.leaveBalance -= days;
+    if (requester && request.type === "cuti_tahunan") {
+      requester.leaveBalance -= days;
     }
     if (requester) {
       createNotification(
@@ -155,7 +225,9 @@ export function getRequestsForEmployees(employeeIds: string[]): LeaveRequest[] {
 }
 
 export function getPendingApprovalsFor(approverId: string): LeaveRequest[] {
-  return leaveRequests.filter((r) =>
-    isCurrentApprover(r.approvalChain, r.currentStepIndex, approverId),
+  return leaveRequests.filter(
+    (r) =>
+      r.status === "menunggu" &&
+      isCurrentApprover(r.approvalChain, r.currentStepIndex, approverId),
   );
 }

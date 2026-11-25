@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
-import { getCurrentActor } from "@/lib/current-actor";
+import { getCurrentActor, actorHasPermission } from "@/lib/current-actor";
+import { canManagePayroll } from "@/lib/permissions";
 import { payslips, employees } from "@/lib/db";
-import { ROLE_LEVEL } from "@/lib/types";
-import { getReportScope } from "@/lib/reports";
 
 export async function GET(request: Request) {
   const actor = await getCurrentActor();
   if (!actor) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  if (actor.type !== "admin" && ROLE_LEVEL[actor.employee.role] > ROLE_LEVEL.manager) {
+  if (!actorHasPermission(actor, canManagePayroll)) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
-  const scopeIds = getReportScope(actor);
   const { searchParams } = new URL(request.url);
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
 
-  let filtered = scopeIds ? payslips.filter((p) => scopeIds.has(p.employeeId)) : payslips;
+  let filtered = payslips;
   if (dateFrom && dateTo) {
     filtered = filtered.filter((p) => p.period >= dateFrom.slice(0, 7) && p.period <= dateTo.slice(0, 7));
   }

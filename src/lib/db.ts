@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { previousPeriod, todayISO } from "./date";
 import { BASE_SALARY_BY_ROLE } from "./payroll-config";
 import type {
   Employee,
@@ -151,6 +152,10 @@ function createInitialStore(): Store {
         "Membantu operasional harian gudang pusat: penerimaan barang, penyusunan stok, dan persiapan pengiriman.",
       requirements:
         "Min. SMA/SMK sederajat, terbiasa kerja fisik & shift, diutamakan berpengalaman di gudang/logistik.",
+      location: "Gudang Pusat, Depok",
+      workArrangement: "onsite",
+      salaryRange: "Rp 5.500.000 – Rp 6.500.000",
+      deadline: "2026-12-31",
       status: "dibuka",
       createdBy: "made",
       createdAt: "2026-06-15T02:00:00.000Z",
@@ -164,9 +169,30 @@ function createInitialStore(): Store {
         "Mengembangkan portofolio klien korporat untuk layanan logistik & pergudangan EgaLog.",
       requirements:
         "Min. D3/S1 semua jurusan, pengalaman sales B2B minimal 1 tahun, komunikatif, punya SIM A/C.",
+      location: "Kantor Pusat, Depok",
+      workArrangement: "hybrid",
+      salaryRange: "Rp 7.000.000 – Rp 10.000.000",
+      deadline: "2026-12-15",
       status: "dibuka",
       createdBy: "made",
       createdAt: "2026-06-20T02:00:00.000Z",
+    },
+    {
+      id: "job-3",
+      title: "HR Generalist",
+      department: "hr",
+      employmentType: "full_time",
+      description:
+        "Menjalankan proses rekrutmen, administrasi karyawan, dan program engagement untuk tim EgaLog yang terus bertumbuh.",
+      requirements:
+        "Min. S1 Psikologi/Manajemen SDM, 2 tahun pengalaman HR generalist, memahami UU Ketenagakerjaan, teliti dan komunikatif.",
+      location: "Kantor Pusat, Depok",
+      workArrangement: "onsite",
+      salaryRange: "Rp 6.000.000 – Rp 8.000.000",
+      deadline: "2026-12-20",
+      status: "dibuka",
+      createdBy: "made",
+      createdAt: "2026-07-02T02:00:00.000Z",
     },
   ];
 
@@ -179,6 +205,7 @@ function createInitialStore(): Store {
       phone: "0812-3456-7890",
       resumeNote: "3 tahun pengalaman sebagai staff gudang di perusahaan ekspedisi.",
       resumeFile: null,
+      consentAt: "2026-06-18T03:00:00.000Z",
       stage: "interview",
       notes: "Interview tahap 1 dengan Supervisor Gudang dijadwalkan minggu depan.",
       appliedAt: "2026-06-18T03:00:00.000Z",
@@ -193,6 +220,7 @@ function createInitialStore(): Store {
       phone: "0813-2233-4455",
       resumeNote: "Fresh graduate SMK Logistik, magang 6 bulan di gudang retail.",
       resumeFile: null,
+      consentAt: "2026-06-28T03:00:00.000Z",
       stage: "lamar",
       notes: "",
       appliedAt: "2026-06-28T03:00:00.000Z",
@@ -207,6 +235,7 @@ function createInitialStore(): Store {
       phone: "0815-6677-8899",
       resumeNote: "2 tahun sales B2B di perusahaan distribusi FMCG, target tercapai konsisten.",
       resumeFile: null,
+      consentAt: "2026-06-10T03:00:00.000Z",
       stage: "offer",
       notes: "Sudah interview final dengan Manager Sales, menunggu keputusan offer.",
       appliedAt: "2026-06-10T03:00:00.000Z",
@@ -228,9 +257,13 @@ function createInitialStore(): Store {
     },
   ];
 
+  const seedHolidays = createSeedHolidays();
+
   return {
     employees,
-    attendanceRecords: [],
+    // Demo payroll butuh data absensi nyata. Tanpa seed ini, generate payroll
+    // untuk periode apa pun akan menghitung semua hari sebagai alpha.
+    attendanceRecords: createSeedAttendance(employees, seedHolidays),
     leaveRequests: [],
     payslips: [],
     performanceReviews: [],
@@ -238,7 +271,7 @@ function createInitialStore(): Store {
     jobPostings,
     candidates,
     notifications: [],
-    holidays: createSeedHolidays(),
+    holidays: seedHolidays,
     announcements: [],
     systemSettings: {
       workStartHour: 8,
@@ -269,6 +302,60 @@ function createInitialStore(): Store {
       holiday: 21,
     },
   };
+}
+
+/**
+ * Seed absensi untuk bulan lalu + bulan berjalan sampai kemarin. Pola dibuat
+ * deterministik supaya demo selalu punya data yang masuk akal (mayoritas
+ * hadir, sebagian terlambat, sedikit alpha) tanpa file fixture raksasa.
+ */
+function createSeedAttendance(emps: Employee[], holidayList: Holiday[]): AttendanceRecord[] {
+  const holidaySet = new Set(holidayList.map((h) => h.date));
+  const today = todayISO();
+  const periods = [previousPeriod(today.slice(0, 7)), today.slice(0, 7)];
+  const records: AttendanceRecord[] = [];
+  let sequence = 1;
+
+  const activeEmployees = emps.filter((e) => e.isActive);
+
+  for (const [index, employee] of activeEmployees.entries()) {
+    const joinedAt = employee.joinedAt.slice(0, 10);
+
+    for (const period of periods) {
+      const [year, month] = period.split("-").map(Number);
+      const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+      for (let day = 1; day <= lastDay; day++) {
+        const date = `${period}-${String(day).padStart(2, "0")}`;
+        const dayOfWeek = new Date(`${date}T00:00:00+07:00`).getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        if (holidaySet.has(date)) continue;
+        if (date >= today) continue; // hari ini & masa depan tidak di-seed
+        if (date < joinedAt) continue;
+
+        // ~4% alpha, ~11% terlambat, sisanya hadir.
+        const seed = (index * 7 + day * 3 + month) % 23;
+        if (seed === 0) continue;
+        const late = seed % 9 === 0;
+
+        records.push({
+          id: `att-seed-${sequence++}`,
+          employeeId: employee.id,
+          date,
+          clockIn: new Date(`${date}T${late ? "08:17:00" : "07:52:00"}+07:00`).toISOString(),
+          clockOut: new Date(`${date}T17:06:00+07:00`).toISOString(),
+          clockInLocation: { lat: -6.3844303, lng: 106.8124087 },
+          clockOutLocation: { lat: -6.3844303, lng: 106.8124087 },
+          selfieClockIn: null,
+          selfieClockOut: null,
+          status: late ? "terlambat" : "hadir",
+          ...(late ? { note: "Data demo: terlambat" } : {}),
+        });
+      }
+    }
+  }
+
+  return records;
 }
 
 function createSeedHolidays(): Holiday[] {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, TriangleAlert, Send } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
+import { countWorkingDaysInRange, formatDateID, todayISO } from "@/lib/date";
 
 const TYPE_OPTIONS = [
   { value: "cuti_tahunan", label: "Cuti Tahunan" },
@@ -11,7 +12,7 @@ const TYPE_OPTIONS = [
   { value: "izin", label: "Izin" },
 ] as const;
 
-export function LeaveForm() {
+export function LeaveForm({ holidayDates = [] }: { holidayDates?: string[] }) {
   const router = useRouter();
   const showToast = useToast();
   const [type, setType] = useState<(typeof TYPE_OPTIONS)[number]["value"]>("cuti_tahunan");
@@ -20,6 +21,11 @@ export function LeaveForm() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const workingDays = useMemo(
+    () => countWorkingDaysInRange(startDate, endDate, holidayDates),
+    [startDate, endDate, holidayDates],
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,8 +89,12 @@ export function LeaveForm() {
             id="startDate"
             type="date"
             required
+            min={todayISO()}
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              if (endDate && e.target.value > endDate) setEndDate(e.target.value);
+            }}
             className="w-full rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -96,12 +106,28 @@ export function LeaveForm() {
             id="endDate"
             type="date"
             required
+            min={startDate || todayISO()}
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full rounded-[10px] border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>
+
+      {startDate && endDate && (
+        <div className="rounded-[10px] border border-border bg-surface-muted/60 px-3.5 py-2.5 text-xs text-muted-foreground">
+          {workingDays > 0 ? (
+            <>
+              Rentang ini memakai <span className="font-semibold text-foreground">{workingDays} hari kerja</span>
+              {" "}({formatDateID(startDate, { day: "numeric", month: "short" })} –{" "}
+              {formatDateID(endDate, { day: "numeric", month: "short", year: "numeric" })}).
+              Sabtu, Minggu, dan hari libur tidak memotong saldo.
+            </>
+          ) : (
+            "Rentang ini tidak mengandung hari kerja. Pilih tanggal lain."
+          )}
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label htmlFor="reason" className="text-sm font-medium">

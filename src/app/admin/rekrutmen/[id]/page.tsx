@@ -4,20 +4,16 @@ import { findJobPostingById, getCandidatesForJob } from "@/lib/recruitment";
 
 export const metadata: Metadata = { title: "Admin • Detail Lowongan" };
 import { DEPARTMENT_LABEL } from "@/lib/types";
+import { EMPLOYMENT_TYPE_LABEL, WORK_ARRANGEMENT_LABEL } from "@/lib/labels";
+import { formatDateID } from "@/lib/date";
 import { Card, PageHeader } from "@/components/card";
 import { StatusBadge } from "@/components/status-badge";
 import { BackLink } from "@/components/back-link";
 import { AddCandidateForm } from "@/components/add-candidate-form";
 import { CandidateStageEditor } from "@/components/candidate-stage-editor";
 
-const EMPLOYMENT_TYPE_LABEL: Record<string, string> = {
-  full_time: "Full-time",
-  kontrak: "Kontrak",
-  magang: "Magang",
-};
-
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+  return formatDateID(iso.slice(0, 10), {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -41,11 +37,29 @@ export default async function AdminJobPostingDetailPage({
 
       <PageHeader
         title={posting.title}
-        description={`${DEPARTMENT_LABEL[posting.department]} · ${EMPLOYMENT_TYPE_LABEL[posting.employmentType]}`}
+        description={`${DEPARTMENT_LABEL[posting.department]} · ${EMPLOYMENT_TYPE_LABEL[posting.employmentType]} · ${WORK_ARRANGEMENT_LABEL[posting.workArrangement]}`}
         action={<StatusBadge status={posting.status} />}
       />
 
       <Card className="mb-5">
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm mb-4 pb-4 border-b border-border">
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Lokasi</dt>
+            <dd>{posting.location}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Rentang Gaji</dt>
+            <dd>{posting.salaryRange ?? "Dirahasiakan"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Batas Lamaran</dt>
+            <dd>{posting.deadline ? formatDateID(posting.deadline) : "Tanpa batas"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground mb-1">Dipublikasikan</dt>
+            <dd>{formatDateID(posting.createdAt.slice(0, 10))}</dd>
+          </div>
+        </dl>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Deskripsi</p>
@@ -88,6 +102,16 @@ export default async function AdminJobPostingDetailPage({
                 </div>
                 {c.resumeNote && (
                   <p className="text-sm text-foreground/80 mb-3">{c.resumeNote}</p>
+                )}
+                {c.resumeFile && (
+                  <a
+                    href={`/api/rekrutmen/kandidat/${c.id}/cv`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mb-3 rounded-[8px] border border-border bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted transition-colors"
+                  >
+                    Unduh CV
+                  </a>
                 )}
                 <div className="border-t border-border pt-3">
                   <CandidateStageEditor

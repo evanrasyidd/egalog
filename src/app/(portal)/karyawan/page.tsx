@@ -77,16 +77,25 @@ export default async function KaryawanPage({
       )}
 
       <Card>
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto"
+          role="region"
+          aria-label="Tabel daftar karyawan"
+          tabIndex={0}
+        >
           <table className="w-full text-sm" aria-label="Daftar karyawan">
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">
                 <th className="pb-2 font-medium">Nama</th>
-                <th className="pb-2 font-medium">NIP</th>
+                <th className="pb-2 font-medium hidden sm:table-cell">NIP</th>
                 <th className="pb-2 font-medium">Jabatan</th>
                 <th className="pb-2 font-medium">Departemen</th>
-                <th className="pb-2 font-medium">Role</th>
-                {isManager && <th className="pb-2 font-medium"></th>}
+                <th className="pb-2 font-medium hidden md:table-cell">Role</th>
+                {isManager && (
+                  <th className="pb-2 font-medium">
+                    <span className="sr-only">Aksi</span>
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -100,7 +109,7 @@ export default async function KaryawanPage({
                           {e.name}
                         </Link>
                       </td>
-                      <td className="py-2.5 font-mono text-muted-foreground">
+                      <td className="py-2.5 font-mono text-muted-foreground hidden sm:table-cell">
                         <Link href={`/karyawan/${e.id}`}>{e.nip}</Link>
                       </td>
                       <td className="py-2.5">
@@ -109,12 +118,20 @@ export default async function KaryawanPage({
                       <td className="py-2.5 text-muted-foreground">
                         <Link href={`/karyawan/${e.id}`}>{DEPARTMENT_LABEL[e.department]}</Link>
                       </td>
-                      <td className="py-2.5">
+                      <td className="py-2.5 hidden md:table-cell">
                         <Link href={`/karyawan/${e.id}`}>{ROLE_LABEL[e.role]}</Link>
                       </td>
                       <td className="py-2.5 text-right">
-                        <Link href={`/karyawan/${e.id}`}>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground inline" strokeWidth={1.75} />
+                        <Link
+                          href={`/karyawan/${e.id}`}
+                          aria-label={`Lihat detail ${e.name}`}
+                          className="inline-flex rounded-[6px] p-1 hover:bg-surface-muted"
+                        >
+                          <ChevronRight
+                            className="h-4 w-4 text-muted-foreground"
+                            strokeWidth={1.75}
+                            aria-hidden="true"
+                          />
                         </Link>
                       </td>
                     </>
@@ -124,12 +141,12 @@ export default async function KaryawanPage({
                         <Avatar name={e.name} avatarColor={e.avatarColor} avatarPhoto={e.avatarPhoto} size="xs" />
                         {e.name}
                       </td>
-                      <td className="py-2.5 font-mono text-muted-foreground">{e.nip}</td>
+                      <td className="py-2.5 font-mono text-muted-foreground hidden sm:table-cell">{e.nip}</td>
                       <td className="py-2.5">{e.jobTitle}</td>
                       <td className="py-2.5 text-muted-foreground">
                         {DEPARTMENT_LABEL[e.department]}
                       </td>
-                      <td className="py-2.5">{ROLE_LABEL[e.role]}</td>
+                      <td className="py-2.5 hidden md:table-cell">{ROLE_LABEL[e.role]}</td>
                     </>
                   )}
                 </tr>

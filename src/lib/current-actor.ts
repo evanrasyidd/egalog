@@ -1,7 +1,8 @@
 import "server-only";
 import { getSession } from "./session";
 import { findEmployeeById, findAdminById } from "./db";
-import type { Employee, AdminAccount } from "./types";
+import { canManageRecruitment } from "./permissions";
+import type { Department, Employee, AdminAccount } from "./types";
 
 export type Actor =
   | { type: "employee"; employee: Employee }
@@ -43,6 +44,19 @@ export function actorHasPermission(
   if (!actor) return false;
   if (actor.type === "admin") return true;
   return check(actor.employee);
+}
+
+/**
+ * Cek scope rekrutmen per departemen lowongan. Admin selalu lolos; Manager HR
+ * hanya lolos untuk departemennya sendiri; Owner/Direktur lolos semua.
+ */
+export function actorCanManageRecruitment(
+  actor: Actor | null,
+  department: Department,
+): boolean {
+  return actorHasPermission(actor, (employee) =>
+    canManageRecruitment(employee, department),
+  );
 }
 
 export function actorName(actor: Actor): string {

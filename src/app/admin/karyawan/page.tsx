@@ -60,16 +60,23 @@ export default async function AdminKaryawanPage({
       </div>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto"
+          role="region"
+          aria-label="Tabel daftar karyawan admin"
+          tabIndex={0}
+        >
           <table className="w-full text-sm" aria-label="Daftar karyawan (admin)">
             <thead>
               <tr className="text-left text-xs text-muted-foreground border-b border-border">
                 <th className="pb-2 font-medium">Nama</th>
-                <th className="pb-2 font-medium">NIP</th>
+                <th className="pb-2 font-medium hidden sm:table-cell">NIP</th>
                 <th className="pb-2 font-medium">Jabatan</th>
                 <th className="pb-2 font-medium">Departemen</th>
-                <th className="pb-2 font-medium">Role</th>
-                <th className="pb-2 font-medium"></th>
+                <th className="pb-2 font-medium hidden md:table-cell">Role</th>
+                <th className="pb-2 font-medium">
+                  <span className="sr-only">Aksi</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -81,7 +88,7 @@ export default async function AdminKaryawanPage({
                       {e.name}
                     </Link>
                   </td>
-                  <td className="py-2.5 font-mono text-muted-foreground">
+                  <td className="py-2.5 font-mono text-muted-foreground hidden sm:table-cell">
                     <Link href={`/admin/karyawan/${e.id}`}>{e.nip}</Link>
                   </td>
                   <td className="py-2.5">
@@ -90,12 +97,20 @@ export default async function AdminKaryawanPage({
                   <td className="py-2.5 text-muted-foreground">
                     <Link href={`/admin/karyawan/${e.id}`}>{DEPARTMENT_LABEL[e.department]}</Link>
                   </td>
-                  <td className="py-2.5">
+                  <td className="py-2.5 hidden md:table-cell">
                     <Link href={`/admin/karyawan/${e.id}`}>{ROLE_LABEL[e.role]}</Link>
                   </td>
                   <td className="py-2.5 text-right">
-                    <Link href={`/admin/karyawan/${e.id}`}>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground inline" strokeWidth={1.75} />
+                    <Link
+                      href={`/admin/karyawan/${e.id}`}
+                      aria-label={`Lihat detail ${e.name}`}
+                      className="inline-flex rounded-[6px] p-1 hover:bg-surface-muted"
+                    >
+                      <ChevronRight
+                        className="h-4 w-4 text-muted-foreground"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
                     </Link>
                   </td>
                 </tr>

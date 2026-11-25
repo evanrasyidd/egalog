@@ -1,6 +1,6 @@
 import { employees, findEmployeeById, getDirectReports, getSubordinateIds } from "./db";
 import { ROLE_LEVEL } from "./types";
-import type { Employee, LeaveApprovalStep, Role } from "./types";
+import type { Department, Employee, LeaveApprovalStep } from "./types";
 
 /**
  * Kebijakan approval cuti EgaLog:
@@ -100,23 +100,44 @@ export function getManageablePerformanceEmployees(actor: Employee): Employee[] {
 }
 
 /**
- * Kelola rekrutmen (bikin lowongan, atur pipeline kandidat) — cuma Admin.
- * Karyawan tetap bisa LIHAT lowongan yang dibuka lewat halaman rekrutmen
- * (read-only), tanpa perlu permission khusus.
+ * Kelola rekrutmen (bikin lowongan, atur pipeline kandidat).
+ *
+ * Policy (disepakati): Owner & Direktur boleh semua departemen; Manager HR
+ * hanya boleh mengelola lowongan departemennya sendiri (HR & GA). Manager
+ * departemen lain tetap bisa melihat job board, tapi read-only. Admin adalah
+ * akun sistem dan selalu lolos lewat `actorHasPermission`.
+ *
+ * Tanpa argumen `department`, fungsi ini menjawab "boleh mengelola minimal
+ * satu departemen?" — dipakai untuk menentukan apakah UI kelola ditampilkan.
+ * Untuk aksi per-lowongan, SELALU kirim department lowongan tersebut.
  */
-export function canManageRecruitment(_employee: Employee): boolean {
+export function canManageRecruitment(employee: Employee, department?: Department): boolean {
+  if (ROLE_LEVEL[employee.role] <= ROLE_LEVEL.direktur) return true;
+  if (employee.role === "manager" && employee.department === "hr") {
+    return department === undefined || department === employee.department;
+  }
   return false;
+}
+
+/**
+ * Siapa yang boleh melihat SELURUH direktori karyawan (bukan cuma subtree):
+ * Owner, Direktur, dan Manager HR. Dipisahkan dari canManageEmployees supaya
+ * "boleh melihat" dan "boleh mengubah" tidak tercampur lagi.
+ */
+export function canViewAllEmployees(employee: Employee): boolean {
+  if (ROLE_LEVEL[employee.role] <= ROLE_LEVEL.direktur) return true;
+  return employee.role === "manager" && employee.department === "hr";
 }
 
 /**
  * Siapa yang boleh kelola data karyawan (tambah, edit jabatan/atasan,
  * nonaktifkan, reset password):
  * - Owner
+ * - Direktur
  * - Manager departemen HR & GA
  */
 export function canManageEmployees(employee: Employee): boolean {
-  if (ROLE_LEVEL[employee.role] <= ROLE_LEVEL.owner) return true;
-  return employee.role === "manager" && employee.department === "hr";
+  return canViewAllEmployees(employee);
 }
 
 /**
@@ -126,5 +147,10 @@ export function canManageEmployees(employee: Employee): boolean {
  * Admin sudah lolos di actorHasPermission, jadi tidak perlu cek hierarki.
  */
 export function canEditEmployee(editor: Employee, target: Employee): boolean {
+  // HR Manager perlu bisa memperbaiki data manager/supervisor/staff lintas
+  // departemen, tapi tetap tidak boleh menyentuh Owner/Direktur.
+  if (editor.role === "manager" && editor.department === "hr") {
+    return ROLE_LEVEL[target.role] > ROLE_LEVEL.direktur;
+  }
   return ROLE_LEVEL[editor.role] < ROLE_LEVEL[target.role];
 }

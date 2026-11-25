@@ -17,6 +17,6 @@ export async function GET(request: Request) {
   searchLimiter.recordFailure(ip);
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q") ?? "";
-  const results = globalSearch(q);
+  const results = globalSearch(q, employee);
   return NextResponse.json({ results });
 }

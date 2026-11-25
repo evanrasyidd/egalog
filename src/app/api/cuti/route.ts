@@ -46,9 +46,14 @@ export async function POST(request: Request) {
 
   if (!result.ok) {
     const messages: Record<string, string> = {
-      insufficient_balance: "Saldo cuti tahunan kamu tidak cukup untuk rentang tanggal ini.",
+      insufficient_balance:
+        "Saldo cuti tahunan kamu tidak cukup untuk rentang tanggal ini (termasuk pengajuan yang masih menunggu).",
       invalid_date_range: "Tanggal selesai tidak boleh sebelum tanggal mulai.",
       employee_not_found: "Data karyawan tidak ditemukan.",
+      overlapping_request:
+        "Rentang tanggal ini overlap dengan pengajuan cuti/izin lain yang masih aktif. Pilih tanggal lain.",
+      no_working_days:
+        "Rentang tanggal yang dipilih tidak mengandung hari kerja (hanya Sabtu/Minggu atau hari libur).",
     };
     return NextResponse.json(
       { error: result.error, message: messages[result.error] },

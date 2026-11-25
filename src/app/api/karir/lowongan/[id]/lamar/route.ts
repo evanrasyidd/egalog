@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { addCandidate, findJobPostingById } from "@/lib/recruitment";
+import { addCandidate, findJobPostingById, isJobOpen } from "@/lib/recruitment";
+import { parseResumeDataUrl } from "@/lib/file";
 import { createRateLimiter } from "@/lib/rate-limiter";
 
 // Endpoint ini SENGAJA publik (tanpa getCurrentActor/getCurrentEmployee) —
@@ -35,6 +36,9 @@ const bodySchema = z.object({
     .nullable()
     .optional()
     .default(null),
+  // Persetujuan pemrosesan data pribadi (wajib). Tanpa ini, data pelamar
+  // disimpan tanpa dasar yang jelas.
+  consent: z.boolean().optional().default(false),
   // Honeypot — field ini TIDAK ADA di form form yang manusia lihat (disembunyikan
   // via CSS di client). Bot yang mengisi semua field di DOM (atau yang hit
   // endpoint ini langsung tanpa lewat form) akan mengisi/mengirim field ini.
@@ -58,7 +62,7 @@ export async function POST(
 
   const { id } = await params;
   const posting = findJobPostingById(id);
-  if (!posting || posting.status !== "dibuka") {
+  if (!posting || !isJobOpen(posting)) {
     return NextResponse.json(
       { error: "not_found", message: "Lowongan tidak ditemukan atau sudah ditutup." },
       { status: 404 },
@@ -85,6 +89,28 @@ export async function POST(
     return NextResponse.json({ ok: true }, { status: 201 });
   }
 
+  if (!parsed.data.consent) {
+    return NextResponse.json(
+      {
+        error: "consent_required",
+        message:
+          "Kamu perlu menyetujui pemrosesan data pribadi untuk keperluan rekrutmen sebelum mengirim lamaran.",
+      },
+      { status: 400 },
+    );
+  }
+
+  if (parsed.data.resumeFile) {
+    const file = parseResumeDataUrl(parsed.data.resumeFile);
+    if (!file.ok) {
+      const message =
+        file.error === "too_large"
+          ? "Ukuran CV maksimal 2 MB."
+          : "File CV harus PDF, DOC, atau DOCX yang valid.";
+      return NextResponse.json({ error: "invalid_file", message }, { status: 400 });
+    }
+  }
+
   const result = addCandidate(
     id,
     "public", // bukan employeeId/adminId — ini submission dari luar sistem
@@ -93,6 +119,7 @@ export async function POST(
     parsed.data.phone,
     parsed.data.resumeNote,
     parsed.data.resumeFile,
+    new Date().toISOString(),
   );
 
   if (!result.ok) {

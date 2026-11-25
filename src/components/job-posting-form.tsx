@@ -4,24 +4,42 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Plus, TriangleAlert } from "lucide-react";
 import { useToast } from "@/components/toast-provider";
-import type { Department, EmploymentType } from "@/lib/types";
+import type { Department, EmploymentType, WorkArrangement } from "@/lib/types";
 import { DEPARTMENT_LABEL } from "@/lib/types";
+import { EMPLOYMENT_TYPE_LABEL, WORK_ARRANGEMENT_LABEL } from "@/lib/labels";
 import { Modal } from "@/components/modal";
+import { todayISO } from "@/lib/date";
 
-const EMPLOYMENT_TYPE_OPTIONS: { value: EmploymentType; label: string }[] = [
-  { value: "full_time", label: "Full-time" },
-  { value: "kontrak", label: "Kontrak" },
-  { value: "magang", label: "Magang" },
-];
+const EMPLOYMENT_TYPE_OPTIONS = Object.entries(EMPLOYMENT_TYPE_LABEL) as [
+  EmploymentType,
+  string,
+][];
 
-const DEPARTMENT_OPTIONS = Object.entries(DEPARTMENT_LABEL) as [Department, string][];
+const WORK_ARRANGEMENT_OPTIONS = Object.entries(WORK_ARRANGEMENT_LABEL) as [
+  WorkArrangement,
+  string,
+][];
 
-export function JobPostingForm() {
+export function JobPostingForm({
+  allowedDepartments = Object.keys(DEPARTMENT_LABEL) as Department[],
+}: {
+  allowedDepartments?: Department[];
+}) {
   const router = useRouter();
   const showToast = useToast();
+  const departmentOptions = allowedDepartments.map(
+    (value) => [value, DEPARTMENT_LABEL[value]] as [Department, string],
+  );
+
   const [title, setTitle] = useState("");
-  const [department, setDepartment] = useState<Department>("operasional");
+  const [department, setDepartment] = useState<Department>(
+    departmentOptions[0]?.[0] ?? "hr",
+  );
   const [employmentType, setEmploymentType] = useState<EmploymentType>("full_time");
+  const [workArrangement, setWorkArrangement] = useState<WorkArrangement>("onsite");
+  const [location, setLocation] = useState("Kantor Pusat, Depok");
+  const [salaryRange, setSalaryRange] = useState("");
+  const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +54,17 @@ export function JobPostingForm() {
       const res = await fetch("/api/rekrutmen/lowongan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, department, employmentType, description, requirements }),
+        body: JSON.stringify({
+          title,
+          department,
+          employmentType,
+          description,
+          requirements,
+          location,
+          workArrangement,
+          salaryRange: salaryRange.trim() || null,
+          deadline: deadline || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -47,6 +75,8 @@ export function JobPostingForm() {
       setTitle("");
       setDescription("");
       setRequirements("");
+      setSalaryRange("");
+      setDeadline("");
       setIsOpen(false);
       showToast("Lowongan berhasil dipublikasikan.");
       router.refresh();
@@ -76,7 +106,7 @@ export function JobPostingForm() {
       open={isOpen}
       onClose={() => setIsOpen(false)}
       title="Buat Lowongan Baru"
-      description="Isi detail posisi yang akan dipublikasikan ke halaman karir."
+      description="Detail ini tampil di halaman karir publik EgaLog."
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -105,31 +135,96 @@ export function JobPostingForm() {
               onChange={(e) => setEmploymentType(e.target.value as EmploymentType)}
               className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             >
-              {EMPLOYMENT_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {EMPLOYMENT_TYPE_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label htmlFor="job-department" className="text-sm font-medium">
+              Departemen
+            </label>
+            <select
+              id="job-department"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value as Department)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              {departmentOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="job-arrangement" className="text-sm font-medium">
+              Sistem Kerja
+            </label>
+            <select
+              id="job-arrangement"
+              value={workArrangement}
+              onChange={(e) => setWorkArrangement(e.target.value as WorkArrangement)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              {WORK_ARRANGEMENT_OPTIONS.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label htmlFor="job-location" className="text-sm font-medium">
+              Lokasi
+            </label>
+            <input
+              id="job-location"
+              type="text"
+              required
+              minLength={3}
+              maxLength={120}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="job-salary" className="text-sm font-medium">
+              Rentang Gaji <span className="text-muted-foreground font-normal">(opsional)</span>
+            </label>
+            <input
+              id="job-salary"
+              type="text"
+              maxLength={80}
+              placeholder="Rp 6.000.000 – Rp 8.000.000"
+              value={salaryRange}
+              onChange={(e) => setSalaryRange(e.target.value)}
+              className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        </div>
+
         <div className="space-y-1.5">
-          <label htmlFor="job-department" className="text-sm font-medium">
-            Departemen
+          <label htmlFor="job-deadline" className="text-sm font-medium">
+            Batas Lamaran <span className="text-muted-foreground font-normal">(opsional)</span>
           </label>
-          <select
-            id="job-department"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value as Department)}
-            className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-          >
-            {DEPARTMENT_OPTIONS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <input
+            id="job-deadline"
+            type="date"
+            min={todayISO()}
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="w-full rounded-[10px] border border-border bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:max-w-[240px]"
+          />
         </div>
 
         <div className="space-y-1.5">

@@ -3,7 +3,7 @@ import { getCurrentEmployee } from "@/lib/current-employee";
 import { getRequestsForEmployees } from "@/lib/leave";
 
 export const metadata: Metadata = { title: "Cuti" };
-import { findEmployeeById } from "@/lib/db";
+import { findEmployeeById, holidays } from "@/lib/db";
 import { ROLE_LABEL } from "@/lib/types";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, PageHeader } from "@/components/card";
@@ -39,7 +39,7 @@ export default async function CutiPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <Card className="lg:col-span-1 h-fit">
           <h2 className="text-sm font-medium mb-4">Ajukan Baru</h2>
-          <LeaveForm />
+          <LeaveForm holidayDates={holidays.map((h) => h.date)} />
         </Card>
 
         <Card className="lg:col-span-2">

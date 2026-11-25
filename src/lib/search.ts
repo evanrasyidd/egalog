@@ -1,15 +1,25 @@
 import "server-only";
-import { employees, announcements } from "./db";
-import type { SearchResult } from "./types";
+import { employees, announcements, getSubordinateIds } from "./db";
+import { canViewAllEmployees } from "./permissions";
+import type { Employee, SearchResult } from "./types";
 
-export function globalSearch(query: string): SearchResult[] {
+/**
+ * Pencarian global hanya menampilkan karyawan yang memang boleh dilihat oleh
+ * pencari. Sebelumnya semua staf bisa menemukan seluruh direktori lewat
+ * pencarian meskipun halaman detailnya menolak akses — kebocoran data yang
+ * tidak kelihatan dari UI.
+ */
+export function globalSearch(query: string, viewer: Employee): SearchResult[] {
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
   const results: SearchResult[] = [];
+  const seesAll = canViewAllEmployees(viewer);
+  const subordinateIds = seesAll ? null : getSubordinateIds(viewer.id);
 
   for (const emp of employees) {
     if (!emp.isActive) continue;
+    if (emp.id !== viewer.id && !seesAll && !subordinateIds?.has(emp.id)) continue;
     if (
       emp.name.toLowerCase().includes(q) ||
       emp.nip.toLowerCase().includes(q) ||
@@ -19,8 +29,9 @@ export function globalSearch(query: string): SearchResult[] {
       results.push({
         type: "karyawan",
         label: emp.name,
-        description: `${emp.nip} · ${emp.jobTitle}`,
-        link: `/karyawan/${emp.id}`,
+        description:
+          emp.id === viewer.id ? `${emp.nip} · Profil kamu` : `${emp.nip} · ${emp.jobTitle}`,
+        link: emp.id === viewer.id ? "/profile" : `/karyawan/${emp.id}`,
       });
     }
   }

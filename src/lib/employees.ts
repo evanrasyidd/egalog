@@ -2,6 +2,7 @@ import "server-only";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { employees, findEmployeeById, nextNip, getDirectReports } from "./db";
+import { todayISO } from "./date";
 import { BASE_SALARY_BY_ROLE } from "./payroll-config";
 import type { Employee, Role, Department } from "./types";
 
@@ -108,7 +109,7 @@ export function createEmployee(input: CreateEmployeeInput): CreateEmployeeResult
     department: input.department,
     jobTitle: input.jobTitle.trim(),
     managerId: input.managerId,
-    joinedAt: new Date().toISOString().slice(0, 10),
+    joinedAt: todayISO(),
     leaveBalance: 12,
     avatarColor: "#3D5A80",
     avatarPhoto: null,

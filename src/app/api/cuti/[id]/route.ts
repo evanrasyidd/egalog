@@ -34,11 +34,14 @@ export async function PATCH(
       not_found: "Pengajuan cuti tidak ditemukan.",
       not_your_turn: "Kamu bukan approver untuk pengajuan ini (mungkin bukan giliranmu, atau ini bukan bawahanmu).",
       already_decided: "Pengajuan ini sudah diputuskan sebelumnya.",
+      insufficient_balance:
+        "Saldo cuti tahunan karyawan ini sudah tidak cukup. Minta karyawan menyesuaikan tanggal atau menolak pengajuan ini.",
     };
     const statusMap: Record<string, number> = {
       not_found: 404,
       not_your_turn: 403,
       already_decided: 409,
+      insufficient_balance: 422,
     };
     return NextResponse.json(
       { error: result.error, message: messages[result.error] },

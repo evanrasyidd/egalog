@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Users, Banknote, Briefcase, TrendingUp, FileText, ShieldCheck, CalendarDays,
+  Users, Banknote, Briefcase, TrendingUp, FileText, CalendarDays,
   Megaphone, Settings, Bell, Network, Activity,
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "Admin • Dashboard" };
 import { employees, leaveRequests, attendanceRecords, payslips } from "@/lib/db";
 import { getRecentActivityLog } from "@/lib/activity-log";
+import { formatDateID, todayISO } from "@/lib/date";
 import { Card } from "@/components/card";
-import { formatCurrency } from "@/lib/format";
 
 const QUICK_LINKS = [
   { href: "/admin/karyawan", label: "Kelola Karyawan", icon: Users, desc: "Tambah, edit, nonaktifkan" },
@@ -31,12 +31,24 @@ export default function AdminDashboardPage() {
   const pendingLeaves = leaveRequests.filter((r) => r.status === "menunggu").length;
   const totalPayslips = payslips.length;
   const presentToday = attendanceRecords.filter(
-    (r) => r.date === new Date().toISOString().slice(0, 10) && r.clockIn,
+    (r) => r.date === todayISO() && r.clockIn,
   ).length;
   const recentLogs = getRecentActivityLog(5);
 
   return (
     <div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 mb-5 text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
+        <span>EGALOG/SYS/ADMIN</span>
+        <span>
+          {formatDateID(todayISO(), {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+
       <h1 className="text-xl font-semibold mb-1">Dashboard Admin</h1>
       <p className="text-sm text-muted-foreground mb-6">Ringkasan sistem PT EgaLog Indonesia</p>
 
