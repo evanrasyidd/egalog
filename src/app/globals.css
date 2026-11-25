@@ -1,35 +1,82 @@
 @import "tailwindcss";
 
+/*
+ * Font di-host sendiri (public/fonts) supaya tidak diblokir CSP `style-src
+ * 'self'` dan tidak bergantung pada Google Fonts saat runtime.
+ */
+@font-face {
+  font-family: "Public Sans";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/public-sans-variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/archivo-variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-600.woff2") format("woff2");
+}
+
 :root {
-  /* Neutral / surface */
-  --background: #f5f4ef;
+  /* Neutral / surface — krem hangat dari identitas EgaLog */
+  --background: #f4f2ed;
   --surface: #ffffff;
-  --surface-muted: #ebe8e0;
+  --surface-muted: #eae6dd;
   --border: #ddd8cc;
-  --foreground: #171b21;
-  --muted-foreground: #6b6557;
+  --foreground: #1f2a44;
+  --muted-foreground: #565d6c;
 
   /* Brand — navy logistik, solid, tanpa gradient */
-  --primary: #1e2a44;
-  --primary-foreground: #f5f4ef;
-  --primary-soft: #2d3f5f;
+  --primary: #1f2a44;
+  --primary-foreground: #f4f2ed;
+  --primary-soft: #2e3c5a;
 
-  /* Accent — amber, dipakai sangat selektif (CTA utama, highlight status) */
-  --accent: #c96a2e;
+  /* Accent — terracotta. Versi utama cukup gelap supaya teks putih di
+     atasnya dan teks accent di atas krem lolos WCAG AA; versi light khusus
+     untuk teks accent di atas permukaan navy. */
+  --accent: #a8531f;
+  --accent-light: #e8a06d;
   --accent-foreground: #ffffff;
 
   /* Semantic */
-  --success: #2f7d4f;
+  --success: #2f6b4f;
   --success-foreground: #ffffff;
   --danger: #a6392c;
   --danger-foreground: #ffffff;
-  --warning: #b8811f;
+  --warning: #8a5a0f;
   --warning-foreground: #ffffff;
 
   /* Sidebar */
-  --sidebar-bg: #12181f;
-  --sidebar-foreground: #d9d5c9;
-  --sidebar-active: #c96a2e;
+  --sidebar-bg: #1f2a44;
+  --sidebar-foreground: #e7e3da;
+  --sidebar-active: #e8a06d;
 
   --radius-card: 10px;
 }
@@ -47,6 +94,7 @@
   --color-primary-soft: var(--primary-soft);
 
   --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
   --color-accent-foreground: var(--accent-foreground);
 
   --color-success: var(--success);
@@ -60,7 +108,8 @@
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-active: var(--sidebar-active);
 
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", monospace;
 }
 
@@ -68,6 +117,15 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Judul memakai Archivo — bagian dari identitas baru, sementara teks UI
+   tetap Public Sans supaya kepadatan tabel dan form tidak berubah. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
 }
 
 * {

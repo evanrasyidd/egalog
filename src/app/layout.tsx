@@ -3,9 +3,9 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import { ToastProvider } from "@/components/toast-provider";
 
-// next/font tidak bisa fetch Google Fonts di sandbox build ini (403), jadi
-// pakai fallback <link> tag langsung di head sesuai pola yang sudah terbukti
-// jalan di project-project sebelumnya.
+// Font di-host sendiri lewat public/fonts + @font-face di globals.css.
+// <link> ke Google Fonts dulu selalu diblokir CSP `style-src 'self'`, jadi
+// Archivo/Public Sans tidak pernah benar-benar termuat.
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1e2a44",
+  themeColor: "#1f2a44",
   viewportFit: "cover",
 };
 
@@ -40,11 +40,19 @@ export default function RootLayout({
   return (
     <html lang="id" className="h-full antialiased">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/fonts/public-sans-variable.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/archivo-variable.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
         {/*
           Next.js 15+ cuma generate meta tag standar baru "mobile-web-app-capable"

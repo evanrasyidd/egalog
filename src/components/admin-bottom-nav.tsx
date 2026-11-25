@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, Boxes } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { ADMIN_NAV_ITEMS, ADMIN_BAR_NAV_ITEMS } from "@/lib/admin-nav";
+import { BrandLogo } from "./brand";
 
 export function AdminBottomNav() {
   const pathname = usePathname();
@@ -89,9 +90,9 @@ export function AdminBottomNav() {
           >
             <div className="h-16 flex items-center justify-between gap-2.5 px-4 border-b border-white/10 shrink-0">
               <div className="flex items-center gap-2.5">
-                <Boxes className="h-5 w-5" strokeWidth={1.75} />
-                <span className="font-semibold tracking-tight text-sm text-white">
-                  EgaLog HR
+                <BrandLogo tone="reversed" className="h-[22px] w-auto" />
+                <span className="rounded-[3px] border border-white/20 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-sidebar-foreground/75">
+                  HR
                 </span>
               </div>
               <button

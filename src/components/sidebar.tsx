@@ -3,8 +3,9 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, User, ExternalLink, ChevronRight } from "lucide-react";
+import { User, ExternalLink, ChevronRight } from "lucide-react";
 import { getNavEntries, isNavItemActive, isNavEntryActive, getNavEntryChildren, type NavAccess } from "@/lib/nav-items";
+import { BrandLogo } from "./brand";
 import { ConfirmDialog } from "./confirm-dialog";
 
 export function Sidebar(access: NavAccess) {
@@ -33,10 +34,13 @@ export function Sidebar(access: NavAccess) {
 
   return (
     <aside className="hidden md:flex w-64 shrink-0 flex-col bg-sidebar-bg text-sidebar-foreground">
-      <div className="h-16 flex items-center gap-2.5 px-6 border-b border-white/10">
-        <Boxes className="h-5 w-5" strokeWidth={1.75} />
-        <span className="font-semibold tracking-tight text-sm text-white">
-          EgaLog HR
+      <div className="h-16 flex items-center gap-3 px-6 border-b border-white/10">
+        <BrandLogo tone="reversed" className="h-[22px] w-auto" />
+        <span className="rounded-[3px] border border-white/20 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-widest text-sidebar-foreground/75">
+          HR
+        </span>
+        <span className="ml-auto text-[10px] font-mono uppercase tracking-widest text-sidebar-foreground/65">
+          HR/01
         </span>
       </div>
 
@@ -170,7 +174,7 @@ export function Sidebar(access: NavAccess) {
           }}
           onCancel={() => setShowLogisticsConfirm(false)}
         />
-        <p className="px-3 pt-2 text-xs text-sidebar-foreground/50">
+        <p className="px-3 pt-2 text-xs text-sidebar-foreground/65">
           PT EgaLog Indonesia
         </p>
       </div>
